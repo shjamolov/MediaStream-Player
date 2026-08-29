@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MediaStream Player</string>
+    <string name="bootstrap_ready">Project bootstrap is ready</string>
+</resources>
+
