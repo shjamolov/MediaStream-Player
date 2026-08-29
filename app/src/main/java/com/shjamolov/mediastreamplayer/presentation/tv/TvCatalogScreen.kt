@@ -2,7 +2,7 @@ package com.shjamolov.mediastreamplayer.presentation.tv
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.focusable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,7 +48,10 @@ import com.shjamolov.mediastreamplayer.domain.model.TvCatalog
 import com.shjamolov.mediastreamplayer.domain.model.TvChannelStreams
 
 @Composable
-fun TvCatalogScreen(viewModel: TvCatalogViewModel) {
+fun TvCatalogScreen(
+    viewModel: TvCatalogViewModel,
+    onChannelSelected: (TvChannelStreams) -> Unit,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     MaterialTheme {
@@ -59,6 +62,7 @@ fun TvCatalogScreen(viewModel: TvCatalogViewModel) {
                 is TvCatalogUiState.Content -> CatalogContent(
                     state = currentState,
                     onFilterSelected = viewModel::selectFilter,
+                    onChannelSelected = onChannelSelected,
                 )
             }
         }
@@ -98,6 +102,7 @@ private fun ErrorState(error: TvCatalogError, onRetry: () -> Unit) {
 private fun CatalogContent(
     state: TvCatalogUiState.Content,
     onFilterSelected: (TvCatalogFilter) -> Unit,
+    onChannelSelected: (TvChannelStreams) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         CatalogHeader(channelCount = state.visibleChannels.size)
@@ -111,7 +116,7 @@ private fun CatalogContent(
                 Text(text = stringResource(R.string.tv_catalog_empty))
             }
         } else {
-            ChannelGrid(state.visibleChannels)
+            ChannelGrid(state.visibleChannels, onChannelSelected)
         }
     }
 }
@@ -208,7 +213,10 @@ private fun FilterButton(label: String, selected: Boolean, onClick: () -> Unit) 
 }
 
 @Composable
-private fun ChannelGrid(channels: List<TvChannelStreams>) {
+private fun ChannelGrid(
+    channels: List<TvChannelStreams>,
+    onChannelSelected: (TvChannelStreams) -> Unit,
+) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 220.dp),
         modifier = Modifier.fillMaxSize(),
@@ -217,13 +225,16 @@ private fun ChannelGrid(channels: List<TvChannelStreams>) {
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         items(channels, key = { it.channel.id.value }) { channel ->
-            ChannelCard(channel)
+            ChannelCard(channel, onChannelSelected)
         }
     }
 }
 
 @Composable
-private fun ChannelCard(item: TvChannelStreams) {
+private fun ChannelCard(
+    item: TvChannelStreams,
+    onChannelSelected: (TvChannelStreams) -> Unit,
+) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(12.dp)
 
@@ -239,7 +250,7 @@ private fun ChannelCard(item: TvChannelStreams) {
             )
             .clip(shape)
             .background(if (focused) Color(0xFF17384B) else Color(0xFF10242F))
-            .focusable()
+            .clickable { onChannelSelected(item) }
             .padding(12.dp),
     ) {
         Box(

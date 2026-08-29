@@ -19,6 +19,8 @@ class TvCatalogViewModel(
 ) : ViewModel() {
     private val mutableState = MutableStateFlow<TvCatalogUiState>(TvCatalogUiState.Loading)
     val state: StateFlow<TvCatalogUiState> = mutableState.asStateFlow()
+    private val mutableSelectedChannel = MutableStateFlow<TvChannelStreams?>(null)
+    val selectedChannel: StateFlow<TvChannelStreams?> = mutableSelectedChannel.asStateFlow()
 
     private var catalog: TvCatalog? = null
     private var selectedFilter: TvCatalogFilter = TvCatalogFilter.All
@@ -34,6 +36,14 @@ class TvCatalogViewModel(
     fun selectFilter(filter: TvCatalogFilter) {
         selectedFilter = filter
         catalog?.let(::showCatalog)
+    }
+
+    fun openChannel(channel: TvChannelStreams) {
+        mutableSelectedChannel.value = channel
+    }
+
+    fun closePlayer() {
+        mutableSelectedChannel.value = null
     }
 
     private fun load() {

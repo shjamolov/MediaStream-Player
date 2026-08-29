@@ -16,4 +16,15 @@
         <item quantity="one">%1$d channel</item>
         <item quantity="other">%1$d channels</item>
     </plurals>
+    <string name="player_preparing">Preparing stream…</string>
+    <string name="player_buffering">Buffering…</string>
+    <string name="player_trying_fallback">Stream failed. Trying %1$d of %2$d…</string>
+    <string name="player_stream_position">stream %1$d/%2$d</string>
+    <string name="player_ended">Broadcast ended</string>
+    <string name="player_unavailable">Channel unavailable</string>
+    <plurals name="player_all_streams_failed">
+        <item quantity="one">The only stream variant failed.</item>
+        <item quantity="other">All %1$d stream variants failed.</item>
+    </plurals>
+    <string name="back_to_catalog">Back to catalog</string>
 </resources>

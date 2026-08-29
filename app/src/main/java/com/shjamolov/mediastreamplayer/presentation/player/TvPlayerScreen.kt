@@ -1,0 +1,158 @@
+package com.shjamolov.mediastreamplayer.presentation.player
+
+import androidx.activity.compose.BackHandler
+import androidx.annotation.OptIn
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.ui.PlayerView
+import androidx.tv.material3.Button
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
+import com.shjamolov.mediastreamplayer.R
+import com.shjamolov.mediastreamplayer.domain.model.TvChannelStreams
+
+@OptIn(UnstableApi::class)
+@Composable
+fun TvPlayerScreen(
+    channel: TvChannelStreams,
+    onBack: () -> Unit,
+) {
+    val context = LocalContext.current
+    val controller = remember(channel.channel.id) {
+        TvPlayerController(context, channel)
+    }
+    val state by controller.state.collectAsStateWithLifecycle()
+
+    BackHandler(onBack = onBack)
+    DisposableEffect(controller) {
+        onDispose(controller::release)
+    }
+
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black),
+        ) {
+            AndroidView(
+                factory = { playerContext ->
+                    PlayerView(playerContext).apply {
+                        player = controller.player
+                        useController = true
+                        keepScreenOn = true
+                    }
+                },
+                update = { it.player = controller.player },
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            PlayerHeader(
+                channelName = channel.channel.name,
+                state = state,
+                modifier = Modifier.align(Alignment.TopStart),
+            )
+
+            val failedState = state as? PlaybackUiState.Failed
+            if (failedState != null) {
+                PlayerError(
+                    attemptedStreams = failedState.attemptedStreams,
+                    onRetry = controller::retryFromBestStream,
+                    onBack = onBack,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlayerHeader(
+    channelName: String,
+    state: PlaybackUiState,
+    modifier: Modifier = Modifier,
+) {
+    val status = when (state) {
+        PlaybackUiState.Preparing -> stringResource(R.string.player_preparing)
+        is PlaybackUiState.Buffering -> if (state.isFallback) {
+            stringResource(
+                R.string.player_trying_fallback,
+                state.streamNumber,
+                state.streamCount,
+            )
+        } else {
+            stringResource(R.string.player_buffering)
+        }
+        is PlaybackUiState.Playing -> listOfNotNull(
+            state.quality,
+            stringResource(R.string.player_stream_position, state.streamNumber, state.streamCount),
+        ).joinToString(" • ")
+        PlaybackUiState.Ended -> stringResource(R.string.player_ended)
+        is PlaybackUiState.Failed -> stringResource(R.string.player_unavailable)
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color(0xB3000000))
+            .padding(horizontal = 40.dp, vertical = 22.dp),
+    ) {
+        Text(text = channelName, style = MaterialTheme.typography.headlineSmall)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(text = status, color = Color(0xFFB7C9D6))
+    }
+}
+
+@Composable
+private fun PlayerError(
+    attemptedStreams: Int,
+    onRetry: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .background(Color(0xE6142028))
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = pluralStringResource(
+                R.plurals.player_all_streams_failed,
+                attemptedStreams,
+                attemptedStreams,
+            ),
+            style = MaterialTheme.typography.titleLarge,
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Button(onClick = onRetry) {
+                Text(text = stringResource(R.string.retry))
+            }
+            Button(onClick = onBack) {
+                Text(text = stringResource(R.string.back_to_catalog))
+            }
+        }
+    }
+}

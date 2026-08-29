@@ -60,6 +60,19 @@ class TvCatalogViewModelTest {
         assertEquals(TvCatalogError.NETWORK, (state as TvCatalogUiState.Error).type)
     }
 
+    @Test
+    fun openAndCloseChannel_controlsPlayerNavigationState() = runTest {
+        val catalog = catalog()
+        val viewModel = createViewModel(AppResult.Success(catalog), testScheduler)
+        advanceUntilIdle()
+
+        viewModel.openChannel(catalog.channels.first())
+        assertEquals(catalog.channels.first(), viewModel.selectedChannel.value)
+
+        viewModel.closePlayer()
+        assertEquals(null, viewModel.selectedChannel.value)
+    }
+
     private fun createViewModel(
         result: AppResult<TvCatalog>,
         scheduler: TestCoroutineScheduler,
