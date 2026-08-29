@@ -1,4 +1,4 @@
-package com.shjamolov.mediastreamplayer
+package com.shjamolov.mediastreamplayer.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.shjamolov.mediastreamplayer.R
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
