@@ -3,6 +3,8 @@ package com.shjamolov.mediastreamplayer.domain.model
 data class TvStream(
     val channelId: ChannelId,
     val url: String,
+    val feedId: String? = null,
+    val title: String? = null,
     val quality: String? = null,
     val label: String? = null,
     val userAgent: String? = null,
