@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MediaStream Player</string>
-    <string name="bootstrap_ready">Project bootstrap is ready</string>
+    <string name="live_tv">Live TV</string>
+    <string name="tv_catalog_loading">Loading TV catalog…</string>
+    <string name="tv_catalog_network_error">Could not load the TV catalog. Check your connection.</string>
+    <string name="tv_catalog_storage_error">Could not read local TV data.</string>
+    <string name="tv_catalog_configuration_error">TV catalog configuration is incomplete.</string>
+    <string name="tv_catalog_unknown_error">Something went wrong while loading TV channels.</string>
+    <string name="tv_catalog_empty">No channels match this filter.</string>
+    <string name="retry">Retry</string>
+    <string name="countries">Countries</string>
+    <string name="categories">Categories</string>
+    <string name="all_channels">All</string>
+    <plurals name="channel_count">
+        <item quantity="one">%1$d channel</item>
+        <item quantity="other">%1$d channels</item>
+    </plurals>
 </resources>
-
