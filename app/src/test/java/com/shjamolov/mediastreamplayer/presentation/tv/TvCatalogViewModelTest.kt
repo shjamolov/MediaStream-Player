@@ -10,8 +10,10 @@ import com.shjamolov.mediastreamplayer.domain.model.TvChannel
 import com.shjamolov.mediastreamplayer.domain.model.TvChannelStreams
 import com.shjamolov.mediastreamplayer.domain.model.TvCountry
 import com.shjamolov.mediastreamplayer.domain.model.TvStream
+import com.shjamolov.mediastreamplayer.domain.model.TvGuideEntry
 import com.shjamolov.mediastreamplayer.domain.repository.AdultContentAccess
 import com.shjamolov.mediastreamplayer.domain.repository.TvCatalogRepository
+import com.shjamolov.mediastreamplayer.domain.repository.TvGuideRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -73,12 +75,32 @@ class TvCatalogViewModelTest {
         assertEquals(null, viewModel.selectedChannel.value)
     }
 
+    @Test
+    fun nowAndNext_returnsCurrentAndFollowingProgramme() {
+        val channelId = ChannelId("example.uz")
+        val entries = listOf(
+            TvGuideEntry(channelId, "Current", startsAtEpochMillis = 1_000, endsAtEpochMillis = 2_000),
+            TvGuideEntry(channelId, "Next", startsAtEpochMillis = 2_000, endsAtEpochMillis = 3_000),
+        )
+
+        val (current, next) = entries.nowAndNext(1_500)
+
+        assertEquals("Current", current?.title)
+        assertEquals("Next", next?.title)
+    }
+
     private fun createViewModel(
         result: AppResult<TvCatalog>,
         scheduler: TestCoroutineScheduler,
     ) = TvCatalogViewModel(
         repository = object : TvCatalogRepository {
             override suspend fun getCatalog(adultContentAccess: AdultContentAccess) = result
+        },
+        guideRepository = object : TvGuideRepository {
+            override suspend fun getSchedule(
+                channelId: ChannelId,
+                feedId: String?,
+            ): AppResult<List<TvGuideEntry>> = AppResult.Success(emptyList())
         },
         dispatchers = TestDispatcherProvider(StandardTestDispatcher(scheduler)),
     )

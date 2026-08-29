@@ -27,4 +27,8 @@
         <item quantity="other">All %1$d stream variants failed.</item>
     </plurals>
     <string name="back_to_catalog">Back to catalog</string>
+    <string name="epg_loading">Loading programme guide…</string>
+    <string name="epg_unavailable">Programme guide is unavailable</string>
+    <string name="epg_now">Now: %1$s</string>
+    <string name="epg_next">Next at %1$s: %2$s</string>
 </resources>

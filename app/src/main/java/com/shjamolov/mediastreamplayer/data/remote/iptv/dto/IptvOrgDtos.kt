@@ -44,6 +44,24 @@ data class LogoDto(
 )
 
 @Serializable
+data class GuideDto(
+    val channel: String? = null,
+    val feed: String? = null,
+    val site: String,
+    @SerialName("site_id") val siteId: String,
+    @SerialName("site_name") val siteName: String,
+    val lang: String,
+    val sources: List<GuideSourceDto> = emptyList(),
+)
+
+@Serializable
+data class GuideSourceDto(
+    val host: String,
+    val url: String,
+    val format: String,
+)
+
+@Serializable
 data class CategoryDto(
     val id: String,
     val name: String,

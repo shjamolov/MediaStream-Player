@@ -17,6 +17,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val selectedChannel by tvCatalogViewModel.selectedChannel.collectAsStateWithLifecycle()
+            val guideState by tvCatalogViewModel.guideState.collectAsStateWithLifecycle()
             val channel = selectedChannel
             if (channel == null) {
                 TvCatalogScreen(
@@ -26,6 +27,7 @@ class MainActivity : ComponentActivity() {
             } else {
                 TvPlayerScreen(
                     channel = channel,
+                    guideState = guideState,
                     onBack = tvCatalogViewModel::closePlayer,
                 )
             }

@@ -8,6 +8,9 @@ import com.shjamolov.mediastreamplayer.domain.common.AppResult
 import com.shjamolov.mediastreamplayer.domain.model.TvCatalog
 import com.shjamolov.mediastreamplayer.domain.model.TvChannelStreams
 import com.shjamolov.mediastreamplayer.domain.repository.TvCatalogRepository
+import com.shjamolov.mediastreamplayer.domain.repository.TvGuideRepository
+import com.shjamolov.mediastreamplayer.domain.model.TvGuideEntry
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,12 +18,17 @@ import kotlinx.coroutines.launch
 
 class TvCatalogViewModel(
     private val repository: TvCatalogRepository,
+    private val guideRepository: TvGuideRepository,
     private val dispatchers: DispatcherProvider,
+    private val currentTimeMillis: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow<TvCatalogUiState>(TvCatalogUiState.Loading)
     val state: StateFlow<TvCatalogUiState> = mutableState.asStateFlow()
     private val mutableSelectedChannel = MutableStateFlow<TvChannelStreams?>(null)
     val selectedChannel: StateFlow<TvChannelStreams?> = mutableSelectedChannel.asStateFlow()
+    private val mutableGuideState = MutableStateFlow<TvGuideUiState>(TvGuideUiState.Idle)
+    val guideState: StateFlow<TvGuideUiState> = mutableGuideState.asStateFlow()
+    private var guideJob: Job? = null
 
     private var catalog: TvCatalog? = null
     private var selectedFilter: TvCatalogFilter = TvCatalogFilter.All
@@ -40,10 +48,32 @@ class TvCatalogViewModel(
 
     fun openChannel(channel: TvChannelStreams) {
         mutableSelectedChannel.value = channel
+        mutableGuideState.value = TvGuideUiState.Loading
+        guideJob?.cancel()
+        guideJob = viewModelScope.launch(dispatchers.main) {
+            when (
+                val result = guideRepository.getSchedule(
+                    channelId = channel.channel.id,
+                    feedId = channel.streams.first().feedId,
+                )
+            ) {
+                is AppResult.Success -> {
+                    val (current, next) = result.value.nowAndNext(currentTimeMillis())
+                    mutableGuideState.value = if (current == null && next == null) {
+                        TvGuideUiState.Unavailable
+                    } else {
+                        TvGuideUiState.Content(current, next)
+                    }
+                }
+                is AppResult.Failure -> mutableGuideState.value = TvGuideUiState.Unavailable
+            }
+        }
     }
 
     fun closePlayer() {
+        guideJob?.cancel()
         mutableSelectedChannel.value = null
+        mutableGuideState.value = TvGuideUiState.Idle
     }
 
     private fun load() {
@@ -97,6 +127,16 @@ enum class TvCatalogError {
     UNKNOWN,
 }
 
+sealed interface TvGuideUiState {
+    data object Idle : TvGuideUiState
+    data object Loading : TvGuideUiState
+    data class Content(
+        val current: TvGuideEntry?,
+        val next: TvGuideEntry?,
+    ) : TvGuideUiState
+    data object Unavailable : TvGuideUiState
+}
+
 internal fun List<TvChannelStreams>.filterBy(filter: TvCatalogFilter): List<TvChannelStreams> =
     when (filter) {
         TvCatalogFilter.All -> this
@@ -119,3 +159,14 @@ private fun AppError.toUiError(): TvCatalogError = when (this) {
 }
 
 private const val DEFAULT_COUNTRY = "UZ"
+
+internal fun List<TvGuideEntry>.nowAndNext(
+    epochMillis: Long,
+): Pair<TvGuideEntry?, TvGuideEntry?> {
+    val ordered = sortedBy(TvGuideEntry::startsAtEpochMillis)
+    val current = ordered.firstOrNull { it.isAiringAt(epochMillis) }
+    val next = ordered.firstOrNull {
+        it.startsAtEpochMillis >= (current?.endsAtEpochMillis ?: epochMillis)
+    }
+    return current to next
+}

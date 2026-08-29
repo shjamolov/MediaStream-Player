@@ -4,6 +4,7 @@ import com.shjamolov.mediastreamplayer.data.remote.iptv.dto.CategoryDto
 import com.shjamolov.mediastreamplayer.data.remote.iptv.dto.ChannelDto
 import com.shjamolov.mediastreamplayer.data.remote.iptv.dto.CountryDto
 import com.shjamolov.mediastreamplayer.data.remote.iptv.dto.FeedDto
+import com.shjamolov.mediastreamplayer.data.remote.iptv.dto.GuideDto
 import com.shjamolov.mediastreamplayer.data.remote.iptv.dto.LanguageDto
 import com.shjamolov.mediastreamplayer.data.remote.iptv.dto.LogoDto
 import com.shjamolov.mediastreamplayer.data.remote.iptv.dto.StreamDto
@@ -21,6 +22,9 @@ interface IptvOrgApi {
 
     @GET("logos.json")
     suspend fun getLogos(): List<LogoDto>
+
+    @GET("guides.json")
+    suspend fun getGuides(): List<GuideDto>
 
     @GET("categories.json")
     suspend fun getCategories(): List<CategoryDto>

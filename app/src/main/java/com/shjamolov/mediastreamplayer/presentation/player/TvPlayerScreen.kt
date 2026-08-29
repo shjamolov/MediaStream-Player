@@ -32,11 +32,14 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.shjamolov.mediastreamplayer.R
 import com.shjamolov.mediastreamplayer.domain.model.TvChannelStreams
+import com.shjamolov.mediastreamplayer.presentation.tv.TvGuideUiState
+import java.util.Date
 
 @OptIn(UnstableApi::class)
 @Composable
 fun TvPlayerScreen(
     channel: TvChannelStreams,
+    guideState: TvGuideUiState,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -71,6 +74,7 @@ fun TvPlayerScreen(
             PlayerHeader(
                 channelName = channel.channel.name,
                 state = state,
+                guideState = guideState,
                 modifier = Modifier.align(Alignment.TopStart),
             )
 
@@ -91,6 +95,7 @@ fun TvPlayerScreen(
 private fun PlayerHeader(
     channelName: String,
     state: PlaybackUiState,
+    guideState: TvGuideUiState,
     modifier: Modifier = Modifier,
 ) {
     val status = when (state) {
@@ -111,6 +116,8 @@ private fun PlayerHeader(
         PlaybackUiState.Ended -> stringResource(R.string.player_ended)
         is PlaybackUiState.Failed -> stringResource(R.string.player_unavailable)
     }
+    val context = LocalContext.current
+    val timeFormat = remember(context) { android.text.format.DateFormat.getTimeFormat(context) }
 
     Column(
         modifier = modifier
@@ -121,6 +128,35 @@ private fun PlayerHeader(
         Text(text = channelName, style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = status, color = Color(0xFFB7C9D6))
+        when (guideState) {
+            TvGuideUiState.Idle -> Unit
+            TvGuideUiState.Loading -> Text(
+                text = stringResource(R.string.epg_loading),
+                color = Color(0xFFB7C9D6),
+            )
+            TvGuideUiState.Unavailable -> Text(
+                text = stringResource(R.string.epg_unavailable),
+                color = Color(0xFFB7C9D6),
+            )
+            is TvGuideUiState.Content -> {
+                guideState.current?.let { current ->
+                    Text(
+                        text = stringResource(R.string.epg_now, current.title),
+                        color = Color.White,
+                    )
+                }
+                guideState.next?.let { next ->
+                    Text(
+                        text = stringResource(
+                            R.string.epg_next,
+                            timeFormat.format(Date(next.startsAtEpochMillis)),
+                            next.title,
+                        ),
+                        color = Color(0xFFB7C9D6),
+                    )
+                }
+            }
+        }
     }
 }
 
