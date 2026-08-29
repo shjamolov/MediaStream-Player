@@ -1,0 +1,173 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "63e526f69a646a01acf419bc64a675f9",
+    "entities": [
+      {
+        "tableName": "favorite_media",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`tmdbId` INTEGER NOT NULL, `mediaType` TEXT NOT NULL, `title` TEXT NOT NULL, `posterPath` TEXT, `addedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`tmdbId`, `mediaType`))",
+        "fields": [
+          {
+            "fieldPath": "tmdbId",
+            "columnName": "tmdbId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mediaType",
+            "columnName": "mediaType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "posterPath",
+            "columnName": "posterPath",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "addedAtEpochMillis",
+            "columnName": "addedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "tmdbId",
+            "mediaType"
+          ]
+        }
+      },
+      {
+        "tableName": "favorite_channels",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`channelId` TEXT NOT NULL, `name` TEXT NOT NULL, `logoUrl` TEXT, `addedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`channelId`))",
+        "fields": [
+          {
+            "fieldPath": "channelId",
+            "columnName": "channelId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "logoUrl",
+            "columnName": "logoUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "addedAtEpochMillis",
+            "columnName": "addedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "channelId"
+          ]
+        }
+      },
+      {
+        "tableName": "playback_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`contentKey` TEXT NOT NULL, `contentType` TEXT NOT NULL, `tmdbId` INTEGER, `channelId` TEXT, `seasonNumber` INTEGER, `episodeNumber` INTEGER, `title` TEXT NOT NULL, `posterPath` TEXT, `positionMillis` INTEGER NOT NULL, `durationMillis` INTEGER, `updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`contentKey`))",
+        "fields": [
+          {
+            "fieldPath": "contentKey",
+            "columnName": "contentKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentType",
+            "columnName": "contentType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tmdbId",
+            "columnName": "tmdbId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "channelId",
+            "columnName": "channelId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "seasonNumber",
+            "columnName": "seasonNumber",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "episodeNumber",
+            "columnName": "episodeNumber",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "posterPath",
+            "columnName": "posterPath",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "positionMillis",
+            "columnName": "positionMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationMillis",
+            "columnName": "durationMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "contentKey"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_playback_history_updatedAtEpochMillis",
+            "unique": false,
+            "columnNames": [
+              "updatedAtEpochMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_playback_history_updatedAtEpochMillis` ON `${TABLE_NAME}` (`updatedAtEpochMillis`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '63e526f69a646a01acf419bc64a675f9')"
+    ]
+  }
+}
