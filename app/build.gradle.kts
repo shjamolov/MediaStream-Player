@@ -1,4 +1,11 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use(::load)
+}
+val tmdbApiToken = localProperties.getProperty("TMDB_API_TOKEN", "")
 
 plugins {
     alias(libs.plugins.android.application)
@@ -20,6 +27,7 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "TMDB_API_TOKEN", "\"${tmdbApiToken.replace("\"", "\\\"")}\"")
     }
 
     buildTypes {
@@ -39,6 +47,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {

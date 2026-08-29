@@ -4,6 +4,7 @@ import androidx.room.testing.MigrationTestHelper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.shjamolov.mediastreamplayer.data.local.migration.MIGRATION_1_2
+import com.shjamolov.mediastreamplayer.data.local.migration.MIGRATION_2_3
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,6 +31,12 @@ class AppDatabaseMigrationTest {
             true,
             MIGRATION_1_2,
         ).close()
+    }
+
+    @Test
+    fun migrate2To3_addsCatalogCache() {
+        helper.createDatabase(TEST_DATABASE, 2).close()
+        helper.runMigrationsAndValidate(TEST_DATABASE, 3, true, MIGRATION_2_3).close()
     }
 
     private companion object {

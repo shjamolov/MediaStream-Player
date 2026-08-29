@@ -20,3 +20,14 @@ Build from PowerShell:
 ```powershell
 .\gradlew.bat assembleDebug testDebugUnitTest
 ```
+
+## TMDB catalog
+
+Create a TMDB API Read Access Token in your TMDB account and add it to the local,
+git-ignored `local.properties` file before building:
+
+```properties
+TMDB_API_TOKEN=your_api_read_access_token
+```
+
+The token is injected into the local APK through `BuildConfig` and is never committed.

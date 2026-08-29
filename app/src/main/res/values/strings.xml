@@ -31,4 +31,18 @@
     <string name="epg_unavailable">Programme guide is unavailable</string>
     <string name="epg_now">Now: %1$s</string>
     <string name="epg_next">Next at %1$s: %2$s</string>
+    <string name="movies">Фильмы</string>
+    <string name="series">Сериалы</string>
+    <string name="search">Поиск</string>
+    <string name="search_hint">Введите название фильма или сериала</string>
+    <string name="catalog_loading">Загрузка каталога…</string>
+    <string name="catalog_empty">Ничего не найдено</string>
+    <string name="catalog_network_error">Не удалось загрузить TMDB. Проверьте интернет.</string>
+    <string name="catalog_unknown_error">Ошибка загрузки каталога TMDB.</string>
+    <string name="tmdb_token_missing">TMDB не настроен. Добавьте TMDB_API_TOKEN=ваш_токен в local.properties и пересоберите APK.</string>
+    <string name="offline_cache">Офлайн-кэш</string>
+    <string name="add_favorite">Добавить в избранное</string>
+    <string name="remove_favorite">Удалить из избранного</string>
+    <string name="tmdb_metadata_only">TMDB предоставляет каталог и метаданные. Источник просмотра будет подключён на следующем этапе.</string>
+    <string name="seasons">Сезоны</string>
 </resources>

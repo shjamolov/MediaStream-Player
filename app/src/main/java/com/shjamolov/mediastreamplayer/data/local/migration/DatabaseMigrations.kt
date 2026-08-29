@@ -53,3 +53,25 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         )
     }
 }
+
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `catalog_cache` (
+                `tmdbId` INTEGER NOT NULL,
+                `mediaType` TEXT NOT NULL,
+                `title` TEXT NOT NULL,
+                `originalTitle` TEXT,
+                `overview` TEXT,
+                `posterPath` TEXT,
+                `backdropPath` TEXT,
+                `releaseDate` TEXT,
+                `voteAverage` REAL,
+                `updatedAtEpochMillis` INTEGER NOT NULL,
+                PRIMARY KEY(`tmdbId`, `mediaType`)
+            )
+            """.trimIndent(),
+        )
+    }
+}
