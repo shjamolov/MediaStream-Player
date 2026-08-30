@@ -77,6 +77,8 @@
     <string name="tmdb_attribution">This product uses the TMDB API but is not endorsed or certified by TMDB.</string>
     <string name="iptv_attribution">Телевизионный каталог и публичные потоки предоставлены проектом iptv-org.</string>
     <string name="watch_trailer">Трейлер</string>
+    <string name="watch">Смотреть</string>
+    <string name="watch_source_required">Для просмотра сначала подключите TorrServer. Выбор torrent/magnet будет добавлен на следующем этапе.</string>
     <string name="episodes">Эпизоды</string>
     <string name="episodes_loading">Загрузка эпизодов…</string>
     <string name="cast">В ролях</string>
@@ -90,6 +92,8 @@
     <string name="torrserver_password">Пароль (необязательно)</string>
     <string name="torrserver_emulator_hint">Если TorrServer запущен на компьютере, Android Emulator обращается к нему по адресу http://10.0.2.2:8090.</string>
     <string name="torrserver_test_save">Проверить и сохранить</string>
+    <string name="save">Сохранить</string>
+    <string name="torrserver_saved">Настройки сохранены.</string>
     <string name="torrserver_testing">Подключение…</string>
     <string name="torrserver_connected">Подключено: %1$s</string>
     <string name="torrserver_failed">TorrServer не отвечает. Проверьте адрес, сеть и авторизацию.</string>

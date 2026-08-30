@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,8 +38,12 @@ fun SettingsScreen(
 ) {
     var page by remember { mutableStateOf(SettingsPage.GENERAL) }
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.padding(horizontal = 48.dp, vertical = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SettingsPage.entries.forEach { item ->
+        LazyRow(
+            modifier = Modifier.padding(vertical = 12.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 48.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            items(SettingsPage.entries) { item ->
                 Button(onClick = { page = item }) {
                     Text(if (page == item) "✓ ${stringResource(item.title)}" else stringResource(item.title))
                 }

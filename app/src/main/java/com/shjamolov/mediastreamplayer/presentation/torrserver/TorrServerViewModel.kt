@@ -35,20 +35,15 @@ class TorrServerViewModel(
     fun setUsername(value: String) = mutableState.update { it.copy(username = value, result = null) }
     fun setPassword(value: String) = mutableState.update { it.copy(password = value, result = null) }
 
+    fun save() {
+        val endpoint = validatedEndpoint() ?: return
+        store.save(endpoint)
+        mutableState.update { it.copy(url = endpoint.baseUrl, result = ConnectionResult.Saved) }
+    }
+
     fun testAndSave() {
-        val current = mutableState.value
-        val normalizedUrl = current.url.trim().let { if (it.startsWith("http://") || it.startsWith("https://")) it else "http://$it" }.trimEnd('/')
-        if (current.username.isBlank() != current.password.isBlank()) {
-            mutableState.update { it.copy(result = ConnectionResult.InvalidCredentials) }
-            return
-        }
-        val endpoint = runCatching {
-            TorrServerEndpoint(current.mode, normalizedUrl, current.username.ifBlank { null }, current.password.ifBlank { null })
-        }.getOrElse {
-            mutableState.update { state -> state.copy(result = ConnectionResult.InvalidUrl) }
-            return
-        }
-        mutableState.update { it.copy(testing = true, result = null, url = normalizedUrl) }
+        val endpoint = validatedEndpoint() ?: return
+        mutableState.update { it.copy(testing = true, result = null, url = endpoint.baseUrl) }
         viewModelScope.launch {
             when (val response = repository.testConnection(endpoint)) {
                 is AppResult.Success -> {
@@ -57,6 +52,23 @@ class TorrServerViewModel(
                 }
                 is AppResult.Failure -> mutableState.update { it.copy(testing = false, result = ConnectionResult.Failed) }
             }
+        }
+    }
+
+    private fun validatedEndpoint(): TorrServerEndpoint? {
+        val current = mutableState.value
+        val normalizedUrl = current.url.trim().let {
+            if (it.startsWith("http://") || it.startsWith("https://")) it else "http://$it"
+        }.trimEnd('/')
+        if (current.username.isBlank() != current.password.isBlank()) {
+            mutableState.update { it.copy(result = ConnectionResult.InvalidCredentials) }
+            return null
+        }
+        return runCatching {
+            TorrServerEndpoint(current.mode, normalizedUrl, current.username.ifBlank { null }, current.password.ifBlank { null })
+        }.getOrElse {
+            mutableState.update { state -> state.copy(result = ConnectionResult.InvalidUrl) }
+            null
         }
     }
 }
@@ -71,6 +83,7 @@ data class TorrServerUiState(
 )
 
 sealed interface ConnectionResult {
+    data object Saved : ConnectionResult
     data class Connected(val version: String, val isMatrix: Boolean) : ConnectionResult
     data object Failed : ConnectionResult
     data object InvalidUrl : ConnectionResult

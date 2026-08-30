@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -29,7 +31,10 @@ import com.shjamolov.mediastreamplayer.domain.model.TorrServerMode
 @Composable
 fun TorrServerSettingsScreen(viewModel: TorrServerViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    Column(Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 64.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
         Text("TorrServer", style = MaterialTheme.typography.headlineMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             listOf(TorrServerMode.LOCAL_EXTERNAL, TorrServerMode.REMOTE).forEach { mode ->
@@ -40,14 +45,20 @@ fun TorrServerSettingsScreen(viewModel: TorrServerViewModel) {
             }
         }
         SettingField(state.url, viewModel::setUrl, stringResource(R.string.torrserver_url))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(onClick = viewModel::save, enabled = !state.testing) {
+                Text(stringResource(R.string.save))
+            }
+            Button(onClick = viewModel::testAndSave, enabled = !state.testing) {
+                Text(stringResource(if (state.testing) R.string.torrserver_testing else R.string.torrserver_test_save))
+            }
+        }
+        Text(stringResource(R.string.torrserver_emulator_hint), color = Color(0xFF9CB3C5))
         SettingField(state.username, viewModel::setUsername, stringResource(R.string.torrserver_username))
         SettingField(state.password, viewModel::setPassword, stringResource(R.string.torrserver_password), password = true)
-        Text(stringResource(R.string.torrserver_emulator_hint), color = Color(0xFF9CB3C5))
-        Button(onClick = viewModel::testAndSave, enabled = !state.testing) {
-            Text(stringResource(if (state.testing) R.string.torrserver_testing else R.string.torrserver_test_save))
-        }
         state.result?.let { result ->
             val (text, ok) = when (result) {
+                ConnectionResult.Saved -> stringResource(R.string.torrserver_saved) to true
                 is ConnectionResult.Connected -> stringResource(R.string.torrserver_connected, result.version) to true
                 ConnectionResult.Failed -> stringResource(R.string.torrserver_failed) to false
                 ConnectionResult.InvalidUrl -> stringResource(R.string.torrserver_invalid_url) to false

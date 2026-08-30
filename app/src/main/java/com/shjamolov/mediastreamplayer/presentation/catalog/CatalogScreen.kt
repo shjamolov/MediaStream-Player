@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -118,7 +119,7 @@ private fun MediaCard(item: CatalogItem, onClick: (CatalogItem) -> Unit) {
     Column(
         Modifier.width(190.dp).onFocusChanged { focused = it.isFocused }
             .border(if (focused) 3.dp else 1.dp, if (focused) Color.White else Color(0xFF294354), RoundedCornerShape(12.dp))
-            .clip(RoundedCornerShape(12.dp)).clickable { onClick(item) }.padding(8.dp),
+            .clip(RoundedCornerShape(12.dp)).clickable { onClick(item) }.focusable().padding(8.dp),
     ) {
         AsyncImage(
             model = item.posterPath?.let { IMAGE_BASE + it }, contentDescription = item.title,
@@ -142,6 +143,7 @@ private fun DetailsScreen(
 ) {
     val item = details.item
     val uriHandler = LocalUriHandler.current
+    var watchMessageVisible by remember(item.id) { mutableStateOf(false) }
     Row(Modifier.fillMaxSize().padding(48.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
         AsyncImage(item.posterPath?.let { IMAGE_BASE + it }, item.title, Modifier.width(250.dp).height(375.dp), contentScale = ContentScale.Crop)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
@@ -155,12 +157,18 @@ private fun DetailsScreen(
             if (details.genres.isNotEmpty()) Text(details.genres.joinToString(" • "), Modifier.padding(top = 10.dp))
             Text(item.overview.orEmpty(), Modifier.padding(vertical = 20.dp), maxLines = 7, overflow = TextOverflow.Ellipsis)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = { watchMessageVisible = true }) {
+                    Text(stringResource(R.string.watch))
+                }
                 details.trailer?.let { trailer ->
                     Button(onClick = { uriHandler.openUri("https://www.youtube.com/watch?v=${trailer.key}") }) {
                         Text(stringResource(R.string.watch_trailer))
                     }
                 }
                 Button(onClick = onFavorite) { Text(stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite)) }
+            }
+            if (watchMessageVisible) {
+                Text(stringResource(R.string.watch_source_required), Modifier.padding(top = 12.dp), color = Color(0xFFFFC857))
             }
             Text(stringResource(R.string.tmdb_metadata_only), Modifier.padding(top = 16.dp), color = Color(0xFF9CB3C5))
             if (loading) Text(stringResource(R.string.catalog_loading))
