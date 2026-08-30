@@ -49,12 +49,23 @@ import com.shjamolov.mediastreamplayer.R
 import com.shjamolov.mediastreamplayer.domain.model.CatalogDetails
 import com.shjamolov.mediastreamplayer.domain.model.CatalogItem
 import com.shjamolov.mediastreamplayer.domain.model.MediaType
+import com.shjamolov.mediastreamplayer.presentation.torrent.TorrentPlaybackViewModel
+import com.shjamolov.mediastreamplayer.presentation.torrent.TorrentSourceScreen
 
 private const val IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
 @Composable
-fun CatalogScreen(viewModel: CatalogViewModel, searchMode: Boolean = false) {
+fun CatalogScreen(
+    viewModel: CatalogViewModel,
+    torrentViewModel: TorrentPlaybackViewModel,
+    searchMode: Boolean = false,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val torrentState by torrentViewModel.state.collectAsStateWithLifecycle()
+    if (torrentState.visible) {
+        TorrentSourceScreen(torrentViewModel)
+        return
+    }
     state.selected?.let {
         BackHandler(onBack = viewModel::closeDetails)
         DetailsScreen(
@@ -68,6 +79,7 @@ fun CatalogScreen(viewModel: CatalogViewModel, searchMode: Boolean = false) {
             onFavorite = viewModel::toggleFavorite,
             onSeason = viewModel::loadSeason,
             onRecommendation = viewModel::open,
+            onWatch = { torrentViewModel.open(it.item.title, it.item.posterPath?.let { path -> IMAGE_BASE + path }) },
         )
         return
     }
@@ -144,10 +156,10 @@ private fun DetailsScreen(
     onFavorite: () -> Unit,
     onSeason: (Int) -> Unit,
     onRecommendation: (CatalogItem) -> Unit,
+    onWatch: () -> Unit,
 ) {
     val item = details.item
     val uriHandler = LocalUriHandler.current
-    var watchMessageVisible by remember(item.id) { mutableStateOf(false) }
     var trailerMessageVisible by remember(item.id) { mutableStateOf(false) }
     Row(Modifier.fillMaxSize().padding(48.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
         AsyncImage(item.posterPath?.let { IMAGE_BASE + it }, item.title, Modifier.width(250.dp).height(375.dp), contentScale = ContentScale.Crop)
@@ -162,7 +174,7 @@ private fun DetailsScreen(
             if (details.genres.isNotEmpty()) Text(details.genres.joinToString(" • "), Modifier.padding(top = 10.dp))
             Text(item.overview.orEmpty(), Modifier.padding(vertical = 20.dp), maxLines = 7, overflow = TextOverflow.Ellipsis)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { watchMessageVisible = true }) {
+                Button(onClick = onWatch) {
                     Text(stringResource(R.string.watch))
                 }
                 Button(onClick = {
@@ -172,9 +184,6 @@ private fun DetailsScreen(
                     Text(stringResource(R.string.watch_trailer))
                 }
                 Button(onClick = onFavorite) { Text(stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite)) }
-            }
-            if (watchMessageVisible) {
-                Text(stringResource(R.string.watch_source_required), Modifier.padding(top = 12.dp), color = Color(0xFFFFC857))
             }
             if (trailerMessageVisible) {
                 Text(stringResource(R.string.trailer_unavailable), Modifier.padding(top = 12.dp), color = Color(0xFFFFC857))

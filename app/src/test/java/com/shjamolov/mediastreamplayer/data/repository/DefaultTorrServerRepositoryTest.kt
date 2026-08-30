@@ -4,6 +4,7 @@ import com.shjamolov.mediastreamplayer.domain.common.AppResult
 import com.shjamolov.mediastreamplayer.domain.model.TorrServerEndpoint
 import com.shjamolov.mediastreamplayer.domain.model.TorrServerMode
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
@@ -28,9 +29,32 @@ class DefaultTorrServerRepositoryTest {
                 .build()
         }.build()
         val endpoint = TorrServerEndpoint(TorrServerMode.REMOTE, "http://192.168.1.2:8090", "user", "pass")
-        val result = DefaultTorrServerRepository(client).testConnection(endpoint) as AppResult.Success
+        val result = DefaultTorrServerRepository(client, Json { ignoreUnknownKeys = true }).testConnection(endpoint) as AppResult.Success
         assertEquals("TorrServer MatriX.141.1", result.value.version)
         assertTrue(result.value.isMatrix)
         assertEquals("Basic dXNlcjpwYXNz", authorization)
+    }
+
+    @Test
+    fun addTorrent_returnsVideoFilesAndBuildsPlaybackUrl() = runTest {
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            Response.Builder()
+                .request(chain.request())
+                .protocol(Protocol.HTTP_1_1)
+                .code(200)
+                .message("OK")
+                .body(
+                    """{"hash":"abc123","title":"Movie","file_stats":[{"id":1,"path":"Movie.mkv","length":1073741824},{"id":2,"path":"Movie.srt","length":1000}]}"""
+                        .toResponseBody("application/json".toMediaType()),
+                )
+                .build()
+        }.build()
+        val repository = DefaultTorrServerRepository(client, Json { ignoreUnknownKeys = true })
+        val endpoint = TorrServerEndpoint(TorrServerMode.REMOTE, "http://10.0.2.2:8090")
+        val result = repository.addTorrent(endpoint, "magnet:?xt=urn:btih:test", "Movie", null) as AppResult.Success
+
+        assertEquals(1, result.value.files.size)
+        assertEquals("Movie.mkv", result.value.files.single().path)
+        assertEquals("http://10.0.2.2:8090/play/abc123/1", repository.playbackSource(endpoint, result.value, 1).url)
     }
 }

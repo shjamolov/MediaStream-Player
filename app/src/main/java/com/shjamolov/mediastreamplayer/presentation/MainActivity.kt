@@ -23,10 +23,12 @@ import com.shjamolov.mediastreamplayer.domain.model.MediaType
 import com.shjamolov.mediastreamplayer.presentation.catalog.CatalogScreen
 import com.shjamolov.mediastreamplayer.presentation.catalog.CatalogViewModel
 import com.shjamolov.mediastreamplayer.presentation.player.TvPlayerScreen
+import com.shjamolov.mediastreamplayer.presentation.player.TorrentPlayerScreen
 import com.shjamolov.mediastreamplayer.presentation.security.ParentalControlViewModel
 import com.shjamolov.mediastreamplayer.presentation.settings.SettingsScreen
 import com.shjamolov.mediastreamplayer.presentation.settings.SettingsViewModel
 import com.shjamolov.mediastreamplayer.presentation.torrserver.TorrServerViewModel
+import com.shjamolov.mediastreamplayer.presentation.torrent.TorrentPlaybackViewModel
 import com.shjamolov.mediastreamplayer.presentation.tv.TvCatalogScreen
 import com.shjamolov.mediastreamplayer.presentation.tv.TvCatalogViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -37,6 +39,7 @@ class MainActivity : ComponentActivity() {
     private val parentalControlViewModel: ParentalControlViewModel by viewModel()
     private val settingsViewModel: SettingsViewModel by viewModel()
     private val torrServerViewModel: TorrServerViewModel by viewModel()
+    private val torrentPlaybackViewModel: TorrentPlaybackViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,12 +48,15 @@ class MainActivity : ComponentActivity() {
             val selectedChannel by tvCatalogViewModel.selectedChannel.collectAsStateWithLifecycle()
             val guideState by tvCatalogViewModel.guideState.collectAsStateWithLifecycle()
             val parentalState by parentalControlViewModel.state.collectAsStateWithLifecycle()
+            val torrentPlayback by torrentPlaybackViewModel.playback.collectAsStateWithLifecycle()
             LaunchedEffect(parentalState.unlocked) {
                 tvCatalogViewModel.setAdultContentUnlocked(parentalState.unlocked)
             }
             val channel = selectedChannel
             var section by remember { mutableStateOf(AppSection.TV) }
-            if (channel != null) {
+            if (torrentPlayback != null) {
+                TorrentPlayerScreen(checkNotNull(torrentPlayback), torrentPlaybackViewModel::closePlayer)
+            } else if (channel != null) {
                 TvPlayerScreen(channel, guideState, tvCatalogViewModel::closePlayer)
             } else {
                 Surface(Modifier.fillMaxSize()) {
@@ -72,8 +78,8 @@ class MainActivity : ComponentActivity() {
                         }
                         when (section) {
                             AppSection.TV -> TvCatalogScreen(tvCatalogViewModel, tvCatalogViewModel::openChannel)
-                            AppSection.MOVIES, AppSection.SERIES -> CatalogScreen(catalogViewModel)
-                            AppSection.SEARCH -> CatalogScreen(catalogViewModel, searchMode = true)
+                            AppSection.MOVIES, AppSection.SERIES -> CatalogScreen(catalogViewModel, torrentPlaybackViewModel)
+                            AppSection.SEARCH -> CatalogScreen(catalogViewModel, torrentPlaybackViewModel, searchMode = true)
                             AppSection.SETTINGS -> SettingsScreen(settingsViewModel, parentalControlViewModel, torrServerViewModel)
                         }
                     }

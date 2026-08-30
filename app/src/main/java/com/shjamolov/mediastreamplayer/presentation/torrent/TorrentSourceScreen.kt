@@ -1,0 +1,83 @@
+package com.shjamolov.mediastreamplayer.presentation.torrent
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.tv.material3.Button
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
+import com.shjamolov.mediastreamplayer.R
+import com.shjamolov.mediastreamplayer.domain.model.TorrentVideoFile
+
+@Composable
+fun TorrentSourceScreen(viewModel: TorrentPlaybackViewModel) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val content = state.content
+    BackHandler(onBack = viewModel::close)
+    Column(
+        Modifier.fillMaxSize().background(Color(0xFF08151D)).padding(horizontal = 64.dp, vertical = 36.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text(stringResource(R.string.torrent_source_title), style = MaterialTheme.typography.headlineLarge)
+        Text(state.title, style = MaterialTheme.typography.titleLarge, color = Color(0xFFFFC857))
+        if (content == null) {
+            BasicTextField(
+                value = state.link,
+                onValueChange = viewModel::setLink,
+                singleLine = false,
+                textStyle = TextStyle(color = Color.White, fontSize = 18.sp),
+                modifier = Modifier.fillMaxWidth().background(Color(0xFF17384B), RoundedCornerShape(10.dp)).padding(16.dp),
+                decorationBox = { inner ->
+                    if (state.link.isBlank()) Text(stringResource(R.string.torrent_link_hint), color = Color.Gray)
+                    inner()
+                },
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = viewModel::load, enabled = !state.loading) {
+                    Text(stringResource(if (state.loading) R.string.torrent_loading else R.string.torrent_load))
+                }
+                Button(onClick = viewModel::close) { Text(stringResource(R.string.cancel)) }
+            }
+            if (state.loading) Text(stringResource(R.string.torrent_metadata_wait), color = Color(0xFFFFC857))
+            state.error?.let {
+                Text(
+                    stringResource(if (it == TorrentSourceError.INVALID_LINK) R.string.torrent_invalid_link else R.string.torrent_load_failed),
+                    color = Color(0xFFFFA5A5),
+                )
+            }
+        } else {
+            Text(stringResource(R.string.torrent_choose_file), style = MaterialTheme.typography.titleLarge)
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(content.files, key = TorrentVideoFile::id) { file ->
+                    Button(onClick = { viewModel.play(file) }, modifier = Modifier.fillMaxWidth()) {
+                        Text("${file.path.substringAfterLast('/').substringAfterLast('\\')} • ${formatSize(file.sizeBytes)}")
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatSize(bytes: Long): String = when {
+    bytes >= 1_073_741_824 -> "%.1f GB".format(bytes / 1_073_741_824.0)
+    bytes >= 1_048_576 -> "%.0f MB".format(bytes / 1_048_576.0)
+    else -> "${bytes / 1024} KB"
+}

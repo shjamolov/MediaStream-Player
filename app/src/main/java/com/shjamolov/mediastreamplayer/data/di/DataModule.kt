@@ -24,5 +24,5 @@ val dataModule = module {
     single { get<AppDatabase>().favoriteChannelDao() }
     single { get<AppDatabase>().playbackHistoryDao() }
     single { get<AppDatabase>().catalogCacheDao() }
-    single<TorrServerRepository> { DefaultTorrServerRepository(get()) }
+    single<TorrServerRepository> { DefaultTorrServerRepository(get(), get()) }
 }

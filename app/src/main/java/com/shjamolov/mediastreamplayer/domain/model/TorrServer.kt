@@ -31,3 +31,15 @@ data class TorrentVideoFile(
         require(sizeBytes >= 0) { "Torrent file size must not be negative" }
     }
 }
+
+data class TorrentContent(
+    val hash: String,
+    val title: String,
+    val files: List<TorrentVideoFile>,
+)
+
+data class TorrentPlaybackSource(
+    val title: String,
+    val url: String,
+    val requestHeaders: Map<String, String> = emptyMap(),
+)
