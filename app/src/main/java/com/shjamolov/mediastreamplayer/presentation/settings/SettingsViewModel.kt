@@ -31,7 +31,7 @@ class SettingsViewModel(
             val result = withContext(Dispatchers.IO) {
                 DiagnosticsResult(
                     tmdbTokenConfigured = BuildConfig.TMDB_API_TOKEN.isNotBlank(),
-                    tmdbReachable = check("https://api.themoviedb.org/3/configuration", BuildConfig.TMDB_API_TOKEN),
+                    tmdbReachable = check("https://api.themoviedb.org/3/movie/popular?language=ru-RU&page=1", BuildConfig.TMDB_API_TOKEN),
                     iptvOrgReachable = check("https://iptv-org.github.io/api/channels.json"),
                 )
             }

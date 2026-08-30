@@ -76,4 +76,10 @@
     <string name="about">О приложении</string>
     <string name="tmdb_attribution">This product uses the TMDB API but is not endorsed or certified by TMDB.</string>
     <string name="iptv_attribution">Телевизионный каталог и публичные потоки предоставлены проектом iptv-org.</string>
+    <string name="watch_trailer">Трейлер</string>
+    <string name="episodes">Эпизоды</string>
+    <string name="episodes_loading">Загрузка эпизодов…</string>
+    <string name="cast">В ролях</string>
+    <string name="available_on">Доступно в сервисах</string>
+    <string name="recommendations">Рекомендации</string>
 </resources>

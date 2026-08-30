@@ -5,6 +5,7 @@ import com.shjamolov.mediastreamplayer.domain.model.CatalogDetails
 import com.shjamolov.mediastreamplayer.domain.model.CatalogItem
 import com.shjamolov.mediastreamplayer.domain.model.MediaType
 import com.shjamolov.mediastreamplayer.domain.model.TmdbId
+import com.shjamolov.mediastreamplayer.domain.model.CatalogEpisode
 import com.shjamolov.mediastreamplayer.domain.repository.CatalogPage
 import com.shjamolov.mediastreamplayer.domain.repository.CatalogRepository
 import kotlinx.coroutines.Dispatchers
@@ -53,6 +54,8 @@ private class FakeCatalogRepository(private val item: CatalogItem) : CatalogRepo
     override suspend fun popular(type: MediaType) = AppResult.Success(CatalogPage(listOf(item), false))
     override suspend fun search(query: String) = AppResult.Success(CatalogPage(listOf(item), false))
     override suspend fun details(id: TmdbId, type: MediaType) = AppResult.Success(CatalogDetails(item))
+    override suspend fun seasonEpisodes(seriesId: TmdbId, seasonNumber: Int): AppResult<List<CatalogEpisode>> =
+        AppResult.Success(emptyList())
     override fun observeFavorites(): Flow<List<CatalogItem>> = MutableStateFlow(emptyList())
     override fun observeIsFavorite(id: TmdbId, type: MediaType): Flow<Boolean> = favorite
     override suspend fun setFavorite(item: CatalogItem, favorite: Boolean) { this.favorite.value = favorite }

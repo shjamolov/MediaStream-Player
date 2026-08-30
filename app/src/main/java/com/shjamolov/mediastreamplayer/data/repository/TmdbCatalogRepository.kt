@@ -13,6 +13,9 @@ import com.shjamolov.mediastreamplayer.domain.common.AppResult
 import com.shjamolov.mediastreamplayer.domain.model.CatalogDetails
 import com.shjamolov.mediastreamplayer.domain.model.CatalogItem
 import com.shjamolov.mediastreamplayer.domain.model.CatalogSeason
+import com.shjamolov.mediastreamplayer.domain.model.CatalogTrailer
+import com.shjamolov.mediastreamplayer.domain.model.CatalogCastMember
+import com.shjamolov.mediastreamplayer.domain.model.CatalogEpisode
 import com.shjamolov.mediastreamplayer.domain.model.MediaType
 import com.shjamolov.mediastreamplayer.domain.model.TmdbId
 import com.shjamolov.mediastreamplayer.domain.repository.CatalogPage
@@ -73,6 +76,18 @@ class TmdbCatalogRepository(
         }
     }
 
+    override suspend fun seasonEpisodes(seriesId: TmdbId, seasonNumber: Int): AppResult<List<CatalogEpisode>> {
+        if (token.isBlank()) return AppResult.Failure(AppError.Configuration("TMDB_API_TOKEN is missing"))
+        return try {
+            val episodes = api.seasonDetails(seriesId.value, seasonNumber, settings.language.value.apiCode).episodes.map {
+                CatalogEpisode(it.id, it.episodeNumber, it.name, it.overview, it.stillPath, it.runtime)
+            }
+            AppResult.Success(episodes)
+        } catch (error: Exception) {
+            AppResult.Failure(if (error is IOException) AppError.Network(error) else AppError.Unexpected(error))
+        }
+    }
+
     override fun observeFavorites(): Flow<List<CatalogItem>> = favorites.observeAll().map { list ->
         list.map { it.toDomain() }
     }
@@ -95,9 +110,37 @@ private fun TmdbMediaDto.toDomain(type: MediaType): CatalogItem? {
 private fun TmdbDetailsDto.toDomain(type: MediaType): CatalogDetails {
     val item = CatalogItem(TmdbId(id), type, title ?: name ?: "—", originalTitle ?: originalName,
         overview, posterPath, backdropPath, releaseDate ?: firstAirDate, voteAverage?.coerceIn(0.0, 10.0))
-    return CatalogDetails(item, genres.map { it.name }, seasons.map {
-        CatalogSeason(it.id, it.seasonNumber, it.name, it.episodeCount)
-    })
+    val mappedRecommendations = recommendations.results.mapNotNull { it.toDomain(type) }
+    val mappedSimilar = similar.results.mapNotNull { it.toDomain(type) }
+    val trailerDto = videos.results.sortedWith(compareByDescending<com.shjamolov.mediastreamplayer.data.remote.tmdb.dto.TmdbVideoDto> { it.official }
+        .thenBy { it.type != "Trailer" }).firstOrNull { it.site.equals("YouTube", true) }
+    val providerRegion = listOf("UZ", "RU", "US").firstNotNullOfOrNull(watchProviders.results::get)
+        ?: watchProviders.results.values.firstOrNull()
+    val providers = providerRegion?.let { region ->
+        (region.flatrate + region.free + region.ads + region.rent + region.buy).map { it.name }.distinct()
+    }.orEmpty()
+    val rating = if (type == MediaType.MOVIE) {
+        listOf("RU", "US").firstNotNullOfOrNull { country ->
+            releaseDates.results.firstOrNull { it.country == country }?.dates?.firstOrNull { it.certification.isNotBlank() }?.certification
+        }
+    } else {
+        listOf("RU", "US").firstNotNullOfOrNull { country ->
+            contentRatings.results.firstOrNull { it.country == country }?.rating?.takeIf(String::isNotBlank)
+        }
+    }
+    return CatalogDetails(
+        item = item,
+        genres = genres.map { it.name },
+        seasons = seasons.map { CatalogSeason(it.id, it.seasonNumber, it.name, it.episodeCount) },
+        runtimeMinutes = runtime ?: episodeRunTime.firstOrNull(),
+        certification = rating,
+        trailer = trailerDto?.let { CatalogTrailer(it.name, it.site, it.key) },
+        cast = credits.cast.sortedBy { it.order }.take(15).map { CatalogCastMember(it.id, it.name, it.character, it.profilePath) },
+        recommendations = mappedRecommendations,
+        similar = mappedSimilar,
+        imdbId = externalIds.imdbId,
+        watchProviders = providers,
+    )
 }
 
 private fun CatalogItem.toCache() = CachedCatalogItemEntity(id.value, type.name, title, originalTitle,

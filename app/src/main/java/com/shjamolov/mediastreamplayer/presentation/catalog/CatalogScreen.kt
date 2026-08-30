@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +33,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,7 +56,16 @@ fun CatalogScreen(viewModel: CatalogViewModel, searchMode: Boolean = false) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     state.selected?.let {
         BackHandler(onBack = viewModel::closeDetails)
-        DetailsScreen(it, state.loadingDetails, state.favorite, viewModel::toggleFavorite)
+        DetailsScreen(
+            details = it,
+            loading = state.loadingDetails,
+            favorite = state.favorite,
+            episodes = state.episodes,
+            loadingEpisodes = state.loadingEpisodes,
+            onFavorite = viewModel::toggleFavorite,
+            onSeason = viewModel::loadSeason,
+            onRecommendation = viewModel::open,
+        )
         return
     }
     Column(Modifier.fillMaxSize().padding(vertical = 28.dp)) {
@@ -118,23 +130,70 @@ private fun MediaCard(item: CatalogItem, onClick: (CatalogItem) -> Unit) {
 }
 
 @Composable
-private fun DetailsScreen(details: CatalogDetails, loading: Boolean, favorite: Boolean, onFavorite: () -> Unit) {
+private fun DetailsScreen(
+    details: CatalogDetails,
+    loading: Boolean,
+    favorite: Boolean,
+    episodes: List<com.shjamolov.mediastreamplayer.domain.model.CatalogEpisode>,
+    loadingEpisodes: Boolean,
+    onFavorite: () -> Unit,
+    onSeason: (Int) -> Unit,
+    onRecommendation: (CatalogItem) -> Unit,
+) {
     val item = details.item
+    val uriHandler = LocalUriHandler.current
     Row(Modifier.fillMaxSize().padding(48.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
         AsyncImage(item.posterPath?.let { IMAGE_BASE + it }, item.title, Modifier.width(250.dp).height(375.dp), contentScale = ContentScale.Crop)
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             Text(item.title, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-            Text(listOfNotNull(item.releaseDate?.take(4), item.voteAverage?.let { "★ %.1f".format(it) }).joinToString(" • "), color = Color(0xFFFFC857))
+            Text(listOfNotNull(
+                item.releaseDate?.take(4),
+                item.voteAverage?.let { "★ %.1f".format(it) },
+                details.runtimeMinutes?.let { "$it мин" },
+                details.certification?.let { "$it+" },
+            ).joinToString(" • "), color = Color(0xFFFFC857))
             if (details.genres.isNotEmpty()) Text(details.genres.joinToString(" • "), Modifier.padding(top = 10.dp))
             Text(item.overview.orEmpty(), Modifier.padding(vertical = 20.dp), maxLines = 7, overflow = TextOverflow.Ellipsis)
-            Button(onClick = onFavorite) { Text(stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                details.trailer?.let { trailer ->
+                    Button(onClick = { uriHandler.openUri("https://www.youtube.com/watch?v=${trailer.key}") }) {
+                        Text(stringResource(R.string.watch_trailer))
+                    }
+                }
+                Button(onClick = onFavorite) { Text(stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite)) }
+            }
             Text(stringResource(R.string.tmdb_metadata_only), Modifier.padding(top = 16.dp), color = Color(0xFF9CB3C5))
             if (loading) Text(stringResource(R.string.catalog_loading))
             if (details.seasons.isNotEmpty()) {
                 Text(stringResource(R.string.seasons), Modifier.padding(top = 18.dp), fontWeight = FontWeight.Bold)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(details.seasons, key = { it.id }) { season ->
-                        Text("${season.name} • ${season.episodeCount}", Modifier.background(Color(0xFF17384B), RoundedCornerShape(8.dp)).padding(12.dp))
+                        Button(onClick = { onSeason(season.number) }) { Text("${season.name} • ${season.episodeCount}") }
+                    }
+                }
+            }
+            if (loadingEpisodes) Text(stringResource(R.string.episodes_loading), Modifier.padding(top = 12.dp))
+            if (episodes.isNotEmpty()) {
+                Text(stringResource(R.string.episodes), Modifier.padding(top = 18.dp), fontWeight = FontWeight.Bold)
+                episodes.forEach { episode ->
+                    Text("${episode.number}. ${episode.name}${episode.runtimeMinutes?.let { " • $it мин" }.orEmpty()}", Modifier.padding(vertical = 5.dp))
+                }
+            }
+            if (details.cast.isNotEmpty()) {
+                Text(stringResource(R.string.cast), Modifier.padding(top = 18.dp), fontWeight = FontWeight.Bold)
+                Text(details.cast.joinToString(" • ") { member -> member.character?.let { "${member.name} — $it" } ?: member.name })
+            }
+            if (details.watchProviders.isNotEmpty()) {
+                Text(stringResource(R.string.available_on), Modifier.padding(top = 18.dp), fontWeight = FontWeight.Bold)
+                Text(details.watchProviders.joinToString(" • "))
+            }
+            if (details.imdbId != null) Text("IMDb: ${details.imdbId}", Modifier.padding(top = 12.dp), color = Color(0xFF9CB3C5))
+            val suggestions = details.recommendations.ifEmpty { details.similar }
+            if (suggestions.isNotEmpty()) {
+                Text(stringResource(R.string.recommendations), Modifier.padding(top = 18.dp), fontWeight = FontWeight.Bold)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.height(350.dp)) {
+                    items(suggestions.take(12), key = { "recommendation-${it.type}-${it.id.value}" }) { recommendation ->
+                        MediaCard(recommendation, onRecommendation)
                     }
                 }
             }

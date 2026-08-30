@@ -7,6 +7,7 @@ import com.shjamolov.mediastreamplayer.domain.common.AppResult
 import com.shjamolov.mediastreamplayer.domain.model.CatalogDetails
 import com.shjamolov.mediastreamplayer.domain.model.CatalogItem
 import com.shjamolov.mediastreamplayer.domain.model.MediaType
+import com.shjamolov.mediastreamplayer.domain.model.CatalogEpisode
 import com.shjamolov.mediastreamplayer.domain.repository.CatalogRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -59,7 +60,17 @@ class CatalogViewModel(private val repository: CatalogRepository) : ViewModel() 
                 _state.update { it.copy(favorite = favorite) }
             }
         }
-        _state.update { it.copy(loadingDetails = true, selected = CatalogDetails(item), favorite = false, error = null) }
+        _state.update {
+            it.copy(
+                loadingDetails = true,
+                selected = CatalogDetails(item),
+                favorite = false,
+                error = null,
+                selectedSeason = null,
+                episodes = emptyList(),
+                loadingEpisodes = false,
+            )
+        }
         viewModelScope.launch {
             when (val result = repository.details(item.id, item.type)) {
                 is AppResult.Success -> _state.update { it.copy(selected = result.value, loadingDetails = false) }
@@ -71,6 +82,17 @@ class CatalogViewModel(private val repository: CatalogRepository) : ViewModel() 
     fun closeDetails() {
         favoriteJob?.cancel()
         _state.update { it.copy(selected = null, favorite = false, error = null) }
+    }
+
+    fun loadSeason(seasonNumber: Int) {
+        val details = _state.value.selected ?: return
+        _state.update { it.copy(loadingEpisodes = true, episodes = emptyList(), selectedSeason = seasonNumber) }
+        viewModelScope.launch {
+            when (val result = repository.seasonEpisodes(details.item.id, seasonNumber)) {
+                is AppResult.Success -> _state.update { it.copy(loadingEpisodes = false, episodes = result.value) }
+                is AppResult.Failure -> _state.update { it.copy(loadingEpisodes = false, error = result.error.toUiError()) }
+            }
+        }
     }
 
     fun toggleFavorite() {
@@ -93,6 +115,9 @@ data class CatalogUiState(
     val loadingDetails: Boolean = false,
     val favorite: Boolean = false,
     val error: CatalogError? = null,
+    val selectedSeason: Int? = null,
+    val episodes: List<CatalogEpisode> = emptyList(),
+    val loadingEpisodes: Boolean = false,
 )
 
 enum class CatalogError { CONFIGURATION, NETWORK, UNKNOWN }
