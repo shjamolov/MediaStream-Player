@@ -112,6 +112,7 @@ private fun PlayerHeader(
         is PlaybackUiState.Playing -> listOfNotNull(
             state.quality,
             stringResource(R.string.player_stream_position, state.streamNumber, state.streamCount),
+            if (state.hasAudio) stringResource(R.string.player_audio_active) else stringResource(R.string.player_audio_missing),
         ).joinToString(" • ")
         PlaybackUiState.Ended -> stringResource(R.string.player_ended)
         is PlaybackUiState.Failed -> stringResource(R.string.player_unavailable)

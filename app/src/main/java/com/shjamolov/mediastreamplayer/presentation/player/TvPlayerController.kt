@@ -4,8 +4,11 @@ import android.content.Context
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
@@ -28,6 +31,15 @@ class TvPlayerController(
 
     val state: StateFlow<PlaybackUiState> = mutableState.asStateFlow()
     val player: ExoPlayer = ExoPlayer.Builder(appContext).build().also {
+        it.setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                .build(),
+            true,
+        )
+        it.setHandleAudioBecomingNoisy(true)
+        it.volume = 1f
         it.addListener(this)
     }
 
@@ -42,10 +54,16 @@ class TvPlayerController(
                 streamNumber = fallbackQueue.currentIndex + 1,
                 streamCount = fallbackQueue.size,
                 quality = fallbackQueue.current.quality,
+                hasAudio = player.currentTracks.hasSelectedAudio(),
             )
             Player.STATE_ENDED -> PlaybackUiState.Ended
             else -> mutableState.value
         }
+    }
+
+    override fun onTracksChanged(tracks: Tracks) {
+        val current = mutableState.value as? PlaybackUiState.Playing ?: return
+        mutableState.value = current.copy(hasAudio = tracks.hasSelectedAudio())
     }
 
     override fun onPlayerError(error: PlaybackException) {
@@ -105,6 +123,7 @@ sealed interface PlaybackUiState {
         val streamNumber: Int,
         val streamCount: Int,
         val quality: String?,
+        val hasAudio: Boolean,
     ) : PlaybackUiState
 
     data object Ended : PlaybackUiState
@@ -113,6 +132,10 @@ sealed interface PlaybackUiState {
         val attemptedStreams: Int,
         val cause: Throwable,
     ) : PlaybackUiState
+}
+
+private fun Tracks.hasSelectedAudio(): Boolean = groups.any { group ->
+    group.type == C.TRACK_TYPE_AUDIO && (0 until group.length).any(group::isTrackSelected)
 }
 
 internal fun TvStream.toMediaItem(): MediaItem {

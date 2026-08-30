@@ -22,6 +22,8 @@
     <string name="player_stream_position">stream %1$d/%2$d</string>
     <string name="player_ended">Broadcast ended</string>
     <string name="player_unavailable">Channel unavailable</string>
+    <string name="player_audio_active">звук активен</string>
+    <string name="player_audio_missing">в потоке нет аудиодорожки</string>
     <plurals name="player_all_streams_failed">
         <item quantity="one">The only stream variant failed.</item>
         <item quantity="other">All %1$d stream variants failed.</item>
