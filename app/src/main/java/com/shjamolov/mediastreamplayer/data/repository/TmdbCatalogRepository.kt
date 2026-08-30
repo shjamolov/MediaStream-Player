@@ -7,6 +7,7 @@ import com.shjamolov.mediastreamplayer.data.local.entity.FavoriteMediaEntity
 import com.shjamolov.mediastreamplayer.data.remote.tmdb.TmdbApi
 import com.shjamolov.mediastreamplayer.data.remote.tmdb.dto.TmdbDetailsDto
 import com.shjamolov.mediastreamplayer.data.remote.tmdb.dto.TmdbMediaDto
+import com.shjamolov.mediastreamplayer.core.settings.AppSettingsStore
 import com.shjamolov.mediastreamplayer.domain.common.AppError
 import com.shjamolov.mediastreamplayer.domain.common.AppResult
 import com.shjamolov.mediastreamplayer.domain.model.CatalogDetails
@@ -25,13 +26,14 @@ class TmdbCatalogRepository(
     private val cache: CatalogCacheDao,
     private val favorites: FavoriteMediaDao,
     private val token: String,
+    private val settings: AppSettingsStore,
 ) : CatalogRepository {
     override suspend fun popular(type: MediaType): AppResult<CatalogPage> {
         if (token.isBlank()) return AppResult.Failure(AppError.Configuration("TMDB_API_TOKEN is missing"))
         return try {
             val remote = when (type) {
-                MediaType.MOVIE -> api.popularMovies().results.mapNotNull { it.toDomain(MediaType.MOVIE) }
-                MediaType.SERIES -> api.popularSeries().results.mapNotNull { it.toDomain(MediaType.SERIES) }
+                MediaType.MOVIE -> api.popularMovies(settings.language.value.apiCode).results.mapNotNull { it.toDomain(MediaType.MOVIE) }
+                MediaType.SERIES -> api.popularSeries(settings.language.value.apiCode).results.mapNotNull { it.toDomain(MediaType.SERIES) }
             }
             cache.upsertAll(remote.map { it.toCache() })
             AppResult.Success(CatalogPage(remote, fromCache = false))
@@ -45,7 +47,7 @@ class TmdbCatalogRepository(
     override suspend fun search(query: String): AppResult<CatalogPage> {
         if (token.isBlank()) return AppResult.Failure(AppError.Configuration("TMDB_API_TOKEN is missing"))
         return try {
-            val items = api.search(query.trim()).results.mapNotNull { dto ->
+            val items = api.search(query.trim(), settings.language.value.apiCode).results.mapNotNull { dto ->
                 when (dto.mediaType) {
                     "movie" -> dto.toDomain(MediaType.MOVIE)
                     "tv" -> dto.toDomain(MediaType.SERIES)
@@ -62,8 +64,8 @@ class TmdbCatalogRepository(
         if (token.isBlank()) return AppResult.Failure(AppError.Configuration("TMDB_API_TOKEN is missing"))
         return try {
             val dto = when (type) {
-                MediaType.MOVIE -> api.movieDetails(id.value)
-                MediaType.SERIES -> api.seriesDetails(id.value)
+                MediaType.MOVIE -> api.movieDetails(id.value, settings.language.value.apiCode)
+                MediaType.SERIES -> api.seriesDetails(id.value, settings.language.value.apiCode)
             }
             AppResult.Success(dto.toDomain(type))
         } catch (error: Exception) {

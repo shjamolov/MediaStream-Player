@@ -32,6 +32,6 @@ val tmdbModule = module {
     }
     single<TmdbApi> { get<Retrofit>(tmdbRetrofit).create(TmdbApi::class.java) }
     single<CatalogRepository> {
-        TmdbCatalogRepository(get(), get(), get(), BuildConfig.TMDB_API_TOKEN)
+        TmdbCatalogRepository(get(), get(), get(), BuildConfig.TMDB_API_TOKEN, get())
     }
 }

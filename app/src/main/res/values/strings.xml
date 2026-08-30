@@ -63,4 +63,17 @@
     <string name="pin_incorrect">Неверный PIN.</string>
     <string name="pin_locked">Слишком много попыток. Повторите примерно через %1$d мин.</string>
     <string name="parental_session_note">После перезапуска приложения раздел 18+ снова блокируется. PIN не хранится в открытом виде.</string>
+    <string name="settings_general">Основные</string>
+    <string name="catalog_language">Язык каталога</string>
+    <string name="catalog_language_note">Новый язык применяется при следующем открытии раздела фильмов или сериалов.</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_english">English</string>
+    <string name="language_uzbek">O‘zbekcha</string>
+    <string name="diagnostics">Диагностика</string>
+    <string name="run_diagnostics">Проверить подключения</string>
+    <string name="diagnostics_running">Проверка…</string>
+    <string name="tmdb_token">TMDB token</string>
+    <string name="about">О приложении</string>
+    <string name="tmdb_attribution">This product uses the TMDB API but is not endorsed or certified by TMDB.</string>
+    <string name="iptv_attribution">Телевизионный каталог и публичные потоки предоставлены проектом iptv-org.</string>
 </resources>

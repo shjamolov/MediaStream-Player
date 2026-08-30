@@ -23,8 +23,9 @@ import com.shjamolov.mediastreamplayer.domain.model.MediaType
 import com.shjamolov.mediastreamplayer.presentation.catalog.CatalogScreen
 import com.shjamolov.mediastreamplayer.presentation.catalog.CatalogViewModel
 import com.shjamolov.mediastreamplayer.presentation.player.TvPlayerScreen
-import com.shjamolov.mediastreamplayer.presentation.security.ParentalControlScreen
 import com.shjamolov.mediastreamplayer.presentation.security.ParentalControlViewModel
+import com.shjamolov.mediastreamplayer.presentation.settings.SettingsScreen
+import com.shjamolov.mediastreamplayer.presentation.settings.SettingsViewModel
 import com.shjamolov.mediastreamplayer.presentation.tv.TvCatalogScreen
 import com.shjamolov.mediastreamplayer.presentation.tv.TvCatalogViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
     private val tvCatalogViewModel: TvCatalogViewModel by viewModel()
     private val catalogViewModel: CatalogViewModel by viewModel()
     private val parentalControlViewModel: ParentalControlViewModel by viewModel()
+    private val settingsViewModel: SettingsViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,7 +72,7 @@ class MainActivity : ComponentActivity() {
                             AppSection.TV -> TvCatalogScreen(tvCatalogViewModel, tvCatalogViewModel::openChannel)
                             AppSection.MOVIES, AppSection.SERIES -> CatalogScreen(catalogViewModel)
                             AppSection.SEARCH -> CatalogScreen(catalogViewModel, searchMode = true)
-                            AppSection.PARENTAL -> ParentalControlScreen(parentalControlViewModel)
+                            AppSection.SETTINGS -> SettingsScreen(settingsViewModel, parentalControlViewModel)
                         }
                     }
                 }
@@ -81,5 +83,5 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class AppSection(val label: String) {
-    TV("TV"), MOVIES("Фильмы"), SERIES("Сериалы"), SEARCH("Поиск"), PARENTAL("PIN")
+    TV("TV"), MOVIES("Фильмы"), SERIES("Сериалы"), SEARCH("Поиск"), SETTINGS("Настройки")
 }
