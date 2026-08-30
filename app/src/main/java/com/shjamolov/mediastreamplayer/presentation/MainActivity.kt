@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,8 @@ import com.shjamolov.mediastreamplayer.domain.model.MediaType
 import com.shjamolov.mediastreamplayer.presentation.catalog.CatalogScreen
 import com.shjamolov.mediastreamplayer.presentation.catalog.CatalogViewModel
 import com.shjamolov.mediastreamplayer.presentation.player.TvPlayerScreen
+import com.shjamolov.mediastreamplayer.presentation.security.ParentalControlScreen
+import com.shjamolov.mediastreamplayer.presentation.security.ParentalControlViewModel
 import com.shjamolov.mediastreamplayer.presentation.tv.TvCatalogScreen
 import com.shjamolov.mediastreamplayer.presentation.tv.TvCatalogViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -29,6 +32,7 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 class MainActivity : ComponentActivity() {
     private val tvCatalogViewModel: TvCatalogViewModel by viewModel()
     private val catalogViewModel: CatalogViewModel by viewModel()
+    private val parentalControlViewModel: ParentalControlViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +40,10 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
             val selectedChannel by tvCatalogViewModel.selectedChannel.collectAsStateWithLifecycle()
             val guideState by tvCatalogViewModel.guideState.collectAsStateWithLifecycle()
+            val parentalState by parentalControlViewModel.state.collectAsStateWithLifecycle()
+            LaunchedEffect(parentalState.unlocked) {
+                tvCatalogViewModel.setAdultContentUnlocked(parentalState.unlocked)
+            }
             val channel = selectedChannel
             var section by remember { mutableStateOf(AppSection.TV) }
             if (channel != null) {
@@ -62,6 +70,7 @@ class MainActivity : ComponentActivity() {
                             AppSection.TV -> TvCatalogScreen(tvCatalogViewModel, tvCatalogViewModel::openChannel)
                             AppSection.MOVIES, AppSection.SERIES -> CatalogScreen(catalogViewModel)
                             AppSection.SEARCH -> CatalogScreen(catalogViewModel, searchMode = true)
+                            AppSection.PARENTAL -> ParentalControlScreen(parentalControlViewModel)
                         }
                     }
                 }
@@ -72,5 +81,5 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class AppSection(val label: String) {
-    TV("TV"), MOVIES("Фильмы"), SERIES("Сериалы"), SEARCH("Поиск")
+    TV("TV"), MOVIES("Фильмы"), SERIES("Сериалы"), SEARCH("Поиск"), PARENTAL("PIN")
 }

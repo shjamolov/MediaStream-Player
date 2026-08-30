@@ -175,6 +175,15 @@ private fun FilterRows(
                 onClick = { onFilterSelected(TvCatalogFilter.All) },
             )
         }
+        if (catalog.channels.any { it.channel.isNsfw }) {
+            item(key = "adult") {
+                FilterButton(
+                    label = stringResource(R.string.adult_channels),
+                    selected = selectedFilter == TvCatalogFilter.Adult,
+                    onClick = { onFilterSelected(TvCatalogFilter.Adult) },
+                )
+            }
+        }
         items(availableCountries, key = { it.code }) { country ->
             val filter = TvCatalogFilter.Country(country.code)
             FilterButton(

@@ -45,4 +45,20 @@
     <string name="remove_favorite">Удалить из избранного</string>
     <string name="tmdb_metadata_only">TMDB предоставляет каталог и метаданные. Источник просмотра будет подключён на следующем этапе.</string>
     <string name="seasons">Сезоны</string>
+    <string name="parental_control">Родительский контроль</string>
+    <string name="create_pin">Создайте PIN для каналов 18+</string>
+    <string name="enter_pin">Введите PIN для открытия каналов 18+</string>
+    <string name="pin_hint">PIN: 4–8 цифр</string>
+    <string name="save_pin">Сохранить PIN</string>
+    <string name="change_pin">Сменить PIN</string>
+    <string name="unlock_adult">Открыть каналы 18+</string>
+    <string name="lock_adult">Заблокировать каналы 18+</string>
+    <string name="adult_channels">18+ Для взрослых</string>
+    <string name="pin_invalid">PIN должен содержать от 4 до 8 цифр.</string>
+    <string name="pin_mismatch">Введённые PIN-коды не совпадают.</string>
+    <string name="pin_created">PIN установлен. Раздел 18+ открыт.</string>
+    <string name="adult_unlocked">Раздел 18+ открыт.</string>
+    <string name="pin_incorrect">Неверный PIN.</string>
+    <string name="pin_locked">Слишком много попыток. Повторите примерно через %1$d мин.</string>
+    <string name="parental_session_note">После перезапуска приложения раздел 18+ снова блокируется. PIN не хранится в открытом виде.</string>
 </resources>

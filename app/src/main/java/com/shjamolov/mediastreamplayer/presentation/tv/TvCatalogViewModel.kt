@@ -9,6 +9,7 @@ import com.shjamolov.mediastreamplayer.domain.model.TvCatalog
 import com.shjamolov.mediastreamplayer.domain.model.TvChannelStreams
 import com.shjamolov.mediastreamplayer.domain.repository.TvCatalogRepository
 import com.shjamolov.mediastreamplayer.domain.repository.TvGuideRepository
+import com.shjamolov.mediastreamplayer.domain.repository.AdultContentAccess
 import com.shjamolov.mediastreamplayer.domain.model.TvGuideEntry
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +40,10 @@ class TvCatalogViewModel(
 
     fun retry() {
         load()
+    }
+
+    fun setAdultContentUnlocked(unlocked: Boolean) {
+        load(if (unlocked) AdultContentAccess.UNLOCKED else AdultContentAccess.BLOCKED)
     }
 
     fun selectFilter(filter: TvCatalogFilter) {
@@ -76,13 +81,15 @@ class TvCatalogViewModel(
         mutableGuideState.value = TvGuideUiState.Idle
     }
 
-    private fun load() {
+    private fun load(access: AdultContentAccess = AdultContentAccess.BLOCKED) {
         mutableState.value = TvCatalogUiState.Loading
         viewModelScope.launch(dispatchers.main) {
-            when (val result = repository.getCatalog()) {
+            when (val result = repository.getCatalog(access)) {
                 is AppResult.Success -> {
                     catalog = result.value
-                    selectedFilter = result.value.defaultFilter()
+                    selectedFilter = if (access == AdultContentAccess.UNLOCKED && result.value.channels.any { it.channel.isNsfw }) {
+                        TvCatalogFilter.Adult
+                    } else result.value.defaultFilter()
                     showCatalog(result.value)
                 }
 
@@ -118,6 +125,7 @@ sealed interface TvCatalogFilter {
     data object All : TvCatalogFilter
     data class Country(val code: String) : TvCatalogFilter
     data class Category(val id: String) : TvCatalogFilter
+    data object Adult : TvCatalogFilter
 }
 
 enum class TvCatalogError {
@@ -142,6 +150,7 @@ internal fun List<TvChannelStreams>.filterBy(filter: TvCatalogFilter): List<TvCh
         TvCatalogFilter.All -> this
         is TvCatalogFilter.Country -> filter { it.channel.countryCode == filter.code }
         is TvCatalogFilter.Category -> filter { filter.id in it.channel.categoryIds }
+        TvCatalogFilter.Adult -> filter { it.channel.isNsfw }
     }
 
 private fun TvCatalog.defaultFilter(): TvCatalogFilter =
