@@ -60,6 +60,8 @@ fun CatalogScreen(viewModel: CatalogViewModel, searchMode: Boolean = false) {
         DetailsScreen(
             details = it,
             loading = state.loadingDetails,
+            detailsLoaded = state.detailsLoaded,
+            detailsError = state.error,
             favorite = state.favorite,
             episodes = state.episodes,
             loadingEpisodes = state.loadingEpisodes,
@@ -134,6 +136,8 @@ private fun MediaCard(item: CatalogItem, onClick: (CatalogItem) -> Unit) {
 private fun DetailsScreen(
     details: CatalogDetails,
     loading: Boolean,
+    detailsLoaded: Boolean,
+    detailsError: CatalogError?,
     favorite: Boolean,
     episodes: List<com.shjamolov.mediastreamplayer.domain.model.CatalogEpisode>,
     loadingEpisodes: Boolean,
@@ -144,6 +148,7 @@ private fun DetailsScreen(
     val item = details.item
     val uriHandler = LocalUriHandler.current
     var watchMessageVisible by remember(item.id) { mutableStateOf(false) }
+    var trailerMessageVisible by remember(item.id) { mutableStateOf(false) }
     Row(Modifier.fillMaxSize().padding(48.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
         AsyncImage(item.posterPath?.let { IMAGE_BASE + it }, item.title, Modifier.width(250.dp).height(375.dp), contentScale = ContentScale.Crop)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
@@ -160,18 +165,26 @@ private fun DetailsScreen(
                 Button(onClick = { watchMessageVisible = true }) {
                     Text(stringResource(R.string.watch))
                 }
-                details.trailer?.let { trailer ->
-                    Button(onClick = { uriHandler.openUri("https://www.youtube.com/watch?v=${trailer.key}") }) {
-                        Text(stringResource(R.string.watch_trailer))
-                    }
+                Button(onClick = {
+                    details.trailer?.let { uriHandler.openUri("https://www.youtube.com/watch?v=${it.key}") }
+                        ?: run { trailerMessageVisible = true }
+                }) {
+                    Text(stringResource(R.string.watch_trailer))
                 }
                 Button(onClick = onFavorite) { Text(stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite)) }
             }
             if (watchMessageVisible) {
                 Text(stringResource(R.string.watch_source_required), Modifier.padding(top = 12.dp), color = Color(0xFFFFC857))
             }
+            if (trailerMessageVisible) {
+                Text(stringResource(R.string.trailer_unavailable), Modifier.padding(top = 12.dp), color = Color(0xFFFFC857))
+            }
             Text(stringResource(R.string.tmdb_metadata_only), Modifier.padding(top = 16.dp), color = Color(0xFF9CB3C5))
             if (loading) Text(stringResource(R.string.catalog_loading))
+            if (detailsLoaded) Text(stringResource(R.string.details_loaded), Modifier.padding(top = 10.dp), color = Color(0xFF76E39A))
+            if (!loading && !detailsLoaded && detailsError != null) {
+                Text(stringResource(R.string.details_load_failed), Modifier.padding(top = 10.dp), color = Color(0xFFFFA5A5))
+            }
             if (details.seasons.isNotEmpty()) {
                 Text(stringResource(R.string.seasons), Modifier.padding(top = 18.dp), fontWeight = FontWeight.Bold)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -77,6 +77,9 @@
     <string name="tmdb_attribution">This product uses the TMDB API but is not endorsed or certified by TMDB.</string>
     <string name="iptv_attribution">Телевизионный каталог и публичные потоки предоставлены проектом iptv-org.</string>
     <string name="watch_trailer">Трейлер</string>
+    <string name="trailer_unavailable">Для этого фильма TMDB не предоставил трейлер.</string>
+    <string name="details_loaded">Подробная информация TMDB загружена.</string>
+    <string name="details_load_failed">Не удалось загрузить подробную информацию. Проверьте TMDB в разделе «Диагностика».</string>
     <string name="watch">Смотреть</string>
     <string name="watch_source_required">Для просмотра сначала подключите TorrServer. Выбор torrent/magnet будет добавлен на следующем этапе.</string>
     <string name="episodes">Эпизоды</string>
@@ -95,6 +98,7 @@
     <string name="save">Сохранить</string>
     <string name="torrserver_saved">Настройки сохранены.</string>
     <string name="torrserver_testing">Подключение…</string>
+    <string name="torrserver_checking">Проверяем соединение с TorrServer…</string>
     <string name="torrserver_connected">Подключено: %1$s</string>
     <string name="torrserver_failed">TorrServer не отвечает. Проверьте адрес, сеть и авторизацию.</string>
     <string name="torrserver_invalid_url">Некорректный адрес TorrServer.</string>

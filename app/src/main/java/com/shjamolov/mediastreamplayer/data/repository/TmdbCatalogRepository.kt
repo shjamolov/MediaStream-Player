@@ -70,7 +70,15 @@ class TmdbCatalogRepository(
                 MediaType.MOVIE -> api.movieDetails(id.value, settings.language.value.apiCode)
                 MediaType.SERIES -> api.seriesDetails(id.value, settings.language.value.apiCode)
             }
-            AppResult.Success(dto.toDomain(type))
+            val fallbackVideos = if (dto.videos.results.isEmpty()) {
+                runCatching {
+                    when (type) {
+                        MediaType.MOVIE -> api.movieVideos(id.value).results
+                        MediaType.SERIES -> api.seriesVideos(id.value).results
+                    }
+                }.getOrDefault(emptyList())
+            } else emptyList()
+            AppResult.Success(dto.toDomain(type, fallbackVideos))
         } catch (error: Exception) {
             AppResult.Failure(if (error is IOException) AppError.Network(error) else AppError.Unexpected(error))
         }
@@ -107,12 +115,15 @@ private fun TmdbMediaDto.toDomain(type: MediaType): CatalogItem? {
         posterPath, backdropPath, releaseDate ?: firstAirDate, voteAverage?.coerceIn(0.0, 10.0))
 }
 
-private fun TmdbDetailsDto.toDomain(type: MediaType): CatalogDetails {
+private fun TmdbDetailsDto.toDomain(
+    type: MediaType,
+    fallbackVideos: List<com.shjamolov.mediastreamplayer.data.remote.tmdb.dto.TmdbVideoDto> = emptyList(),
+): CatalogDetails {
     val item = CatalogItem(TmdbId(id), type, title ?: name ?: "—", originalTitle ?: originalName,
         overview, posterPath, backdropPath, releaseDate ?: firstAirDate, voteAverage?.coerceIn(0.0, 10.0))
     val mappedRecommendations = recommendations.results.mapNotNull { it.toDomain(type) }
     val mappedSimilar = similar.results.mapNotNull { it.toDomain(type) }
-    val trailerDto = videos.results.sortedWith(compareByDescending<com.shjamolov.mediastreamplayer.data.remote.tmdb.dto.TmdbVideoDto> { it.official }
+    val trailerDto = (videos.results + fallbackVideos).sortedWith(compareByDescending<com.shjamolov.mediastreamplayer.data.remote.tmdb.dto.TmdbVideoDto> { it.official }
         .thenBy { it.type != "Trailer" }).firstOrNull { it.site.equals("YouTube", true) }
     val providerRegion = listOf("UZ", "RU", "US").firstNotNullOfOrNull(watchProviders.results::get)
         ?: watchProviders.results.values.firstOrNull()

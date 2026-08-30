@@ -63,6 +63,7 @@ class CatalogViewModel(private val repository: CatalogRepository) : ViewModel() 
         _state.update {
             it.copy(
                 loadingDetails = true,
+                detailsLoaded = false,
                 selected = CatalogDetails(item),
                 favorite = false,
                 error = null,
@@ -73,7 +74,7 @@ class CatalogViewModel(private val repository: CatalogRepository) : ViewModel() 
         }
         viewModelScope.launch {
             when (val result = repository.details(item.id, item.type)) {
-                is AppResult.Success -> _state.update { it.copy(selected = result.value, loadingDetails = false) }
+                is AppResult.Success -> _state.update { it.copy(selected = result.value, loadingDetails = false, detailsLoaded = true) }
                 is AppResult.Failure -> _state.update { it.copy(loadingDetails = false, error = result.error.toUiError()) }
             }
         }
@@ -113,6 +114,7 @@ data class CatalogUiState(
     val fromCache: Boolean = false,
     val selected: CatalogDetails? = null,
     val loadingDetails: Boolean = false,
+    val detailsLoaded: Boolean = false,
     val favorite: Boolean = false,
     val error: CatalogError? = null,
     val selectedSeason: Int? = null,

@@ -3,6 +3,7 @@ package com.shjamolov.mediastreamplayer.data.remote.tmdb
 import com.shjamolov.mediastreamplayer.data.remote.tmdb.dto.TmdbDetailsDto
 import com.shjamolov.mediastreamplayer.data.remote.tmdb.dto.TmdbPageDto
 import com.shjamolov.mediastreamplayer.data.remote.tmdb.dto.TmdbSeasonDetailsDto
+import com.shjamolov.mediastreamplayer.data.remote.tmdb.dto.TmdbVideosDto
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -43,4 +44,16 @@ interface TmdbApi {
         @Path("season") season: Int,
         @Query("language") language: String = "ru-RU",
     ): TmdbSeasonDetailsDto
+
+    @GET("3/movie/{id}/videos")
+    suspend fun movieVideos(
+        @Path("id") id: Long,
+        @Query("language") language: String = "en-US",
+    ): TmdbVideosDto
+
+    @GET("3/tv/{id}/videos")
+    suspend fun seriesVideos(
+        @Path("id") id: Long,
+        @Query("language") language: String = "en-US",
+    ): TmdbVideosDto
 }

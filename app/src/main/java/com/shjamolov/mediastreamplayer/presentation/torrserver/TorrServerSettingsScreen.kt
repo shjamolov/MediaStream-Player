@@ -53,9 +53,9 @@ fun TorrServerSettingsScreen(viewModel: TorrServerViewModel) {
                 Text(stringResource(if (state.testing) R.string.torrserver_testing else R.string.torrserver_test_save))
             }
         }
-        Text(stringResource(R.string.torrserver_emulator_hint), color = Color(0xFF9CB3C5))
-        SettingField(state.username, viewModel::setUsername, stringResource(R.string.torrserver_username))
-        SettingField(state.password, viewModel::setPassword, stringResource(R.string.torrserver_password), password = true)
+        if (state.testing) {
+            Text(stringResource(R.string.torrserver_checking), color = Color(0xFFFFC857))
+        }
         state.result?.let { result ->
             val (text, ok) = when (result) {
                 ConnectionResult.Saved -> stringResource(R.string.torrserver_saved) to true
@@ -66,6 +66,9 @@ fun TorrServerSettingsScreen(viewModel: TorrServerViewModel) {
             }
             Text(text, color = if (ok) Color(0xFF76E39A) else Color(0xFFFFA5A5))
         }
+        Text(stringResource(R.string.torrserver_emulator_hint), color = Color(0xFF9CB3C5))
+        SettingField(state.username, viewModel::setUsername, stringResource(R.string.torrserver_username))
+        SettingField(state.password, viewModel::setPassword, stringResource(R.string.torrserver_password), password = true)
         Text(stringResource(R.string.torrserver_password_security), color = Color(0xFF9CB3C5))
     }
 }
