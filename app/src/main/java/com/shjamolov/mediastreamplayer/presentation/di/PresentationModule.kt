@@ -4,6 +4,7 @@ import com.shjamolov.mediastreamplayer.presentation.tv.TvCatalogViewModel
 import com.shjamolov.mediastreamplayer.presentation.catalog.CatalogViewModel
 import com.shjamolov.mediastreamplayer.presentation.security.ParentalControlViewModel
 import com.shjamolov.mediastreamplayer.presentation.settings.SettingsViewModel
+import com.shjamolov.mediastreamplayer.presentation.torrserver.TorrServerViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -12,4 +13,5 @@ val presentationModule = module {
     viewModel { CatalogViewModel(get()) }
     viewModel { ParentalControlViewModel(get(), get()) }
     viewModel { SettingsViewModel(get(), get()) }
+    viewModel { TorrServerViewModel(get(), get()) }
 }

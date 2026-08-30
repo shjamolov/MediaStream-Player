@@ -25,9 +25,15 @@ import com.shjamolov.mediastreamplayer.R
 import com.shjamolov.mediastreamplayer.core.settings.CatalogLanguage
 import com.shjamolov.mediastreamplayer.presentation.security.ParentalControlScreen
 import com.shjamolov.mediastreamplayer.presentation.security.ParentalControlViewModel
+import com.shjamolov.mediastreamplayer.presentation.torrserver.TorrServerSettingsScreen
+import com.shjamolov.mediastreamplayer.presentation.torrserver.TorrServerViewModel
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel, parentalViewModel: ParentalControlViewModel) {
+fun SettingsScreen(
+    viewModel: SettingsViewModel,
+    parentalViewModel: ParentalControlViewModel,
+    torrServerViewModel: TorrServerViewModel,
+) {
     var page by remember { mutableStateOf(SettingsPage.GENERAL) }
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.padding(horizontal = 48.dp, vertical = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -40,6 +46,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, parentalViewModel: ParentalCont
         when (page) {
             SettingsPage.GENERAL -> GeneralSettings(viewModel)
             SettingsPage.PARENTAL -> ParentalControlScreen(parentalViewModel)
+            SettingsPage.TORRSERVER -> TorrServerSettingsScreen(torrServerViewModel)
             SettingsPage.DIAGNOSTICS -> Diagnostics(viewModel)
             SettingsPage.ABOUT -> About()
         }
@@ -107,6 +114,7 @@ private fun About() {
 private enum class SettingsPage(val title: Int) {
     GENERAL(R.string.settings_general),
     PARENTAL(R.string.parental_control),
+    TORRSERVER(R.string.torrserver),
     DIAGNOSTICS(R.string.diagnostics),
     ABOUT(R.string.about),
 }

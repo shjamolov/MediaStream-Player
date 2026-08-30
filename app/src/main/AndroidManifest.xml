@@ -17,7 +17,8 @@
         android:icon="@drawable/ic_app"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MediaStreamPlayer">
+        android:theme="@style/Theme.MediaStreamPlayer"
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".presentation.MainActivity"

@@ -82,4 +82,18 @@
     <string name="cast">В ролях</string>
     <string name="available_on">Доступно в сервисах</string>
     <string name="recommendations">Рекомендации</string>
+    <string name="torrserver">TorrServer</string>
+    <string name="torrserver_local">Локальный</string>
+    <string name="torrserver_remote">Удалённый</string>
+    <string name="torrserver_url">Адрес, например http://127.0.0.1:8090</string>
+    <string name="torrserver_username">Логин (необязательно)</string>
+    <string name="torrserver_password">Пароль (необязательно)</string>
+    <string name="torrserver_emulator_hint">Если TorrServer запущен на компьютере, Android Emulator обращается к нему по адресу http://10.0.2.2:8090.</string>
+    <string name="torrserver_test_save">Проверить и сохранить</string>
+    <string name="torrserver_testing">Подключение…</string>
+    <string name="torrserver_connected">Подключено: %1$s</string>
+    <string name="torrserver_failed">TorrServer не отвечает. Проверьте адрес, сеть и авторизацию.</string>
+    <string name="torrserver_invalid_url">Некорректный адрес TorrServer.</string>
+    <string name="torrserver_invalid_credentials">Логин и пароль нужно заполнить вместе.</string>
+    <string name="torrserver_password_security">Пароль шифруется ключом Android Keystore и не записывается открытым текстом.</string>
 </resources>
