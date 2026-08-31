@@ -26,12 +26,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.shjamolov.mediastreamplayer.R
 import com.shjamolov.mediastreamplayer.domain.model.TorrServerMode
 import com.shjamolov.mediastreamplayer.core.torrserver.LocalTorrServerState
+import com.shjamolov.mediastreamplayer.presentation.components.AdaptiveButton
 
 @Composable
 fun TorrServerSettingsScreen(viewModel: TorrServerViewModel) {
@@ -46,7 +46,7 @@ fun TorrServerSettingsScreen(viewModel: TorrServerViewModel) {
         Text("TorrServer", style = MaterialTheme.typography.headlineMedium)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(end = 16.dp)) {
             items(listOf(TorrServerMode.LOCAL_MANAGED, TorrServerMode.LOCAL_EXTERNAL, TorrServerMode.REMOTE)) { mode ->
-                Button(onClick = { viewModel.setMode(mode) }) {
+                AdaptiveButton(onClick = { viewModel.setMode(mode) }, selected = state.mode == mode) {
                     val label = stringResource(when (mode) {
                         TorrServerMode.LOCAL_MANAGED -> R.string.torrserver_managed
                         TorrServerMode.LOCAL_EXTERNAL -> R.string.torrserver_local
@@ -70,10 +70,10 @@ fun TorrServerSettingsScreen(viewModel: TorrServerViewModel) {
             SettingField(state.url, viewModel::setUrl, stringResource(R.string.torrserver_url), compact = compact)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = viewModel::save, enabled = !state.testing) {
+            AdaptiveButton(onClick = viewModel::save, enabled = !state.testing) {
                 Text(stringResource(R.string.save))
             }
-            Button(onClick = viewModel::testAndSave, enabled = !state.testing) {
+            AdaptiveButton(onClick = viewModel::testAndSave, enabled = !state.testing) {
                 Text(stringResource(if (state.testing) R.string.torrserver_testing else R.string.torrserver_test_save))
             }
         }

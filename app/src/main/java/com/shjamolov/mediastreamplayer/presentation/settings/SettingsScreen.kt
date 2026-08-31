@@ -23,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.shjamolov.mediastreamplayer.R
@@ -32,6 +31,7 @@ import com.shjamolov.mediastreamplayer.presentation.security.ParentalControlScre
 import com.shjamolov.mediastreamplayer.presentation.security.ParentalControlViewModel
 import com.shjamolov.mediastreamplayer.presentation.torrserver.TorrServerSettingsScreen
 import com.shjamolov.mediastreamplayer.presentation.torrserver.TorrServerViewModel
+import com.shjamolov.mediastreamplayer.presentation.components.AdaptiveButton
 
 @Composable
 fun SettingsScreen(
@@ -48,7 +48,7 @@ fun SettingsScreen(
                 SettingsPage.entries.chunked(2).forEach { pages ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         pages.forEach { item ->
-                            Button(onClick = { page = item }, modifier = Modifier.weight(1f)) {
+                            AdaptiveButton(onClick = { page = item }, modifier = Modifier.weight(1f), selected = page == item) {
                                 Text(if (page == item) "✓ ${stringResource(item.title)}" else stringResource(item.title))
                             }
                         }
@@ -63,7 +63,7 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 items(SettingsPage.entries) { item ->
-                    Button(onClick = { page = item }) {
+                    AdaptiveButton(onClick = { page = item }, selected = page == item) {
                         Text(if (page == item) "✓ ${stringResource(item.title)}" else stringResource(item.title))
                     }
                 }
@@ -90,7 +90,7 @@ private fun GeneralSettings(viewModel: SettingsViewModel) {
         Text(stringResource(R.string.catalog_language_note), color = Color(0xFF9CB3C5))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(CatalogLanguage.entries) { item ->
-                Button(onClick = { viewModel.setLanguage(item) }) {
+                AdaptiveButton(onClick = { viewModel.setLanguage(item) }, selected = language == item) {
                     Text(if (language == item) "✓ ${item.label()}" else item.label())
                 }
             }
@@ -105,7 +105,7 @@ private fun Diagnostics(viewModel: SettingsViewModel) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize().padding(if (maxWidth < 600.dp) 20.dp else 64.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(stringResource(R.string.diagnostics), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Button(onClick = viewModel::runDiagnostics, enabled = state != DiagnosticsState.Running) {
+        AdaptiveButton(onClick = viewModel::runDiagnostics, enabled = state != DiagnosticsState.Running) {
             Text(stringResource(if (state == DiagnosticsState.Running) R.string.diagnostics_running else R.string.run_diagnostics))
         }
         if (state is DiagnosticsState.Complete) {

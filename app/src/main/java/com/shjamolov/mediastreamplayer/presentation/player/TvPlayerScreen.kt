@@ -32,13 +32,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.shjamolov.mediastreamplayer.R
 import com.shjamolov.mediastreamplayer.domain.model.TvChannelStreams
 import com.shjamolov.mediastreamplayer.presentation.tv.TvGuideUiState
 import java.util.Date
+import com.shjamolov.mediastreamplayer.presentation.components.AdaptiveButton
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -96,8 +96,8 @@ fun TvPlayerScreen(
                 modifier = Modifier.align(Alignment.BottomCenter).background(Color(0x99000000)).padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Button(onClick = onPreviousChannel) { Text("↑ Предыдущий") }
-                Button(onClick = onNextChannel) { Text("↓ Следующий") }
+                AdaptiveButton(onClick = onPreviousChannel) { Text("↑ Предыдущий") }
+                AdaptiveButton(onClick = onNextChannel) { Text("↓ Следующий") }
             }
 
             val failedState = state as? PlaybackUiState.Failed
@@ -206,10 +206,10 @@ private fun PlayerError(
         )
         Spacer(modifier = Modifier.height(20.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Button(onClick = onRetry) {
+            AdaptiveButton(onClick = onRetry) {
                 Text(text = stringResource(R.string.retry))
             }
-            Button(onClick = onBack) {
+            AdaptiveButton(onClick = onBack) {
                 Text(text = stringResource(R.string.back_to_catalog))
             }
         }

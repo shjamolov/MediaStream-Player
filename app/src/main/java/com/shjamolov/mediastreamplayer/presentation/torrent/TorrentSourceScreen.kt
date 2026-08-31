@@ -22,11 +22,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.shjamolov.mediastreamplayer.R
 import com.shjamolov.mediastreamplayer.domain.model.TorrentVideoFile
+import com.shjamolov.mediastreamplayer.presentation.components.AdaptiveButton
 
 @Composable
 fun TorrentSourceScreen(viewModel: TorrentPlaybackViewModel) {
@@ -49,7 +49,7 @@ fun TorrentSourceScreen(viewModel: TorrentPlaybackViewModel) {
                 textStyle = TextStyle(color = Color.White, fontSize = 18.sp),
                 modifier = Modifier.fillMaxWidth().background(Color(0xFF17384B), RoundedCornerShape(10.dp)).padding(14.dp),
             )
-            Button(onClick = viewModel::search, enabled = !state.searching && !state.loading) {
+            AdaptiveButton(onClick = viewModel::search, enabled = !state.searching && !state.loading) {
                 Text(stringResource(if (state.searching) R.string.torznab_searching else R.string.torznab_search))
             }
             when {
@@ -61,7 +61,7 @@ fun TorrentSourceScreen(viewModel: TorrentPlaybackViewModel) {
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(state.searchResults, key = { "${it.source}-${it.magnetOrLink}" }) { result ->
-                        Button(
+                        AdaptiveButton(
                             onClick = { viewModel.selectResult(result) },
                             enabled = !state.loading,
                             modifier = Modifier.fillMaxWidth(),
@@ -72,7 +72,7 @@ fun TorrentSourceScreen(viewModel: TorrentPlaybackViewModel) {
                     }
                 }
             }
-            Button(onClick = viewModel::close, enabled = !state.loading) { Text(stringResource(R.string.cancel)) }
+            AdaptiveButton(onClick = viewModel::close, enabled = !state.loading) { Text(stringResource(R.string.cancel)) }
             if (state.loading) Text(stringResource(R.string.torrent_metadata_wait), color = Color(0xFFFFC857))
             state.error?.let {
                 Text(
@@ -84,7 +84,7 @@ fun TorrentSourceScreen(viewModel: TorrentPlaybackViewModel) {
             Text(stringResource(R.string.torrent_choose_file), style = MaterialTheme.typography.titleLarge)
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(content.files, key = TorrentVideoFile::id) { file ->
-                    Button(onClick = { viewModel.play(file) }, modifier = Modifier.fillMaxWidth()) {
+                    AdaptiveButton(onClick = { viewModel.play(file) }, modifier = Modifier.fillMaxWidth()) {
                         Text("${file.path.substringAfterLast('/').substringAfterLast('\\')} • ${formatSize(file.sizeBytes)}")
                     }
                 }

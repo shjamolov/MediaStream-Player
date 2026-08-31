@@ -45,7 +45,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
@@ -55,6 +54,7 @@ import com.shjamolov.mediastreamplayer.domain.model.CatalogItem
 import com.shjamolov.mediastreamplayer.domain.model.MediaType
 import com.shjamolov.mediastreamplayer.presentation.torrent.TorrentPlaybackViewModel
 import com.shjamolov.mediastreamplayer.presentation.torrent.TorrentSourceScreen
+import com.shjamolov.mediastreamplayer.presentation.components.AdaptiveButton
 import com.shjamolov.mediastreamplayer.presentation.theme.AppAccent
 import com.shjamolov.mediastreamplayer.presentation.theme.AppBackground
 import com.shjamolov.mediastreamplayer.presentation.theme.AppGold
@@ -220,7 +220,7 @@ private fun FeaturedMedia(item: CatalogItem, onClick: (CatalogItem) -> Unit) {
             )
             Text(item.overview.orEmpty(), maxLines = 3, overflow = TextOverflow.Ellipsis, color = AppTextSecondary, modifier = Modifier.padding(vertical = 12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { onClick(item) }) { Text("▶ Смотреть") }
+                AdaptiveButton(onClick = { onClick(item) }) { Text("▶ Смотреть") }
                 Text("Подробнее о фильме", color = AppTextSecondary, modifier = Modifier.padding(top = 12.dp))
             }
         }
@@ -339,14 +339,16 @@ private fun DetailsInfo(
             if (details.genres.isNotEmpty()) Text(details.genres.joinToString(" • "), Modifier.padding(top = 10.dp))
             Text(item.overview.orEmpty(), Modifier.padding(vertical = 20.dp), maxLines = 7, overflow = TextOverflow.Ellipsis)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                item { Button(onClick = onWatch) { Text(stringResource(R.string.watch)) } }
-                item { Button(onClick = {
-                    details.trailer?.let { uriHandler.openUri("https://www.youtube.com/watch?v=${it.key}") }
-                        ?: onTrailerUnavailable()
+                item { AdaptiveButton(onClick = onWatch) { Text(stringResource(R.string.watch)) } }
+                item { AdaptiveButton(onClick = {
+                    val opened = details.trailer?.let { trailer ->
+                        runCatching { uriHandler.openUri("https://www.youtube.com/watch?v=${trailer.key}") }.isSuccess
+                    } ?: false
+                    if (!opened) onTrailerUnavailable()
                 }) {
                     Text(stringResource(R.string.watch_trailer))
                 } }
-                item { Button(onClick = onFavorite) { Text(stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite)) } }
+                item { AdaptiveButton(onClick = onFavorite, selected = favorite) { Text(stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite)) } }
             }
             if (trailerMessageVisible) {
                 Text(stringResource(R.string.trailer_unavailable), Modifier.padding(top = 12.dp), color = Color(0xFFFFC857))
@@ -361,7 +363,7 @@ private fun DetailsInfo(
                 Text(stringResource(R.string.seasons), Modifier.padding(top = 18.dp), fontWeight = FontWeight.Bold)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(details.seasons, key = { it.id }) { season ->
-                        Button(onClick = { onSeason(season.number) }) { Text("${season.name} • ${season.episodeCount}") }
+                        AdaptiveButton(onClick = { onSeason(season.number) }) { Text("${season.name} • ${season.episodeCount}") }
                     }
                 }
             }

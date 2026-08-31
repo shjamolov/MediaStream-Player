@@ -26,10 +26,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.shjamolov.mediastreamplayer.R
+import com.shjamolov.mediastreamplayer.presentation.components.AdaptiveButton
 
 @Composable
 fun ParentalControlScreen(viewModel: ParentalControlViewModel) {
@@ -51,10 +51,10 @@ fun ParentalControlScreen(viewModel: ParentalControlViewModel) {
         state.message?.let { Text(messageText(it, state.lockRemainingMillis), color = messageColor(it), modifier = Modifier.padding(12.dp)) }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (state.unlocked && !state.changingPin) {
-                Button(onClick = viewModel::lock) { Text(stringResource(R.string.lock_adult)) }
-                Button(onClick = viewModel::startChangePin) { Text(stringResource(R.string.change_pin)) }
+                AdaptiveButton(onClick = viewModel::lock) { Text(stringResource(R.string.lock_adult)) }
+                AdaptiveButton(onClick = viewModel::startChangePin) { Text(stringResource(R.string.change_pin)) }
             } else {
-                Button(onClick = {
+                AdaptiveButton(onClick = {
                     viewModel.submit(pin, confirmation)
                     pin = ""
                     confirmation = ""
