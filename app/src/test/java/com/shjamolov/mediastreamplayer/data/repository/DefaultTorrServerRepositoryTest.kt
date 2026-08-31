@@ -16,6 +16,30 @@ import org.junit.Test
 
 class DefaultTorrServerRepositoryTest {
     @Test
+    fun enableBuiltInSearch_preservesSettingsAndEnablesLocalIndex() = runTest {
+        val requests = mutableListOf<String>()
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val requestBody = chain.request().body
+            val body = okio.Buffer().also { requestBody?.writeTo(it) }.readUtf8()
+            requests += body
+            val responseBody = if (requests.size == 1) {
+                """{"CacheSize":67108864,"ConnectionsLimit":25,"EnableRutorSearch":false}"""
+            } else ""
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body(responseBody.toResponseBody("application/json".toMediaType())).build()
+        }.build()
+
+        val repository = DefaultTorrServerRepository(client, Json { ignoreUnknownKeys = true })
+        val result = repository.enableBuiltInSearch(
+            TorrServerEndpoint(TorrServerMode.LOCAL_MANAGED, "http://127.0.0.1:8090"),
+        ) as AppResult.Success
+
+        assertTrue(result.value)
+        assertTrue(requests[1].contains("\"EnableRutorSearch\":true"))
+        assertTrue(requests[1].contains("\"CacheSize\":67108864"))
+    }
+
+    @Test
     fun testConnection_readsMatrixVersionAndSendsBasicAuth() = runTest {
         var authorization: String? = null
         val client = OkHttpClient.Builder().addInterceptor { chain ->

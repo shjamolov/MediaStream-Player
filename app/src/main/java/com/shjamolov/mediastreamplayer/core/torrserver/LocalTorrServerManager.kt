@@ -12,6 +12,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.concurrent.thread
 
@@ -25,25 +27,28 @@ class LocalTorrServerManager(
     private val configDir = File(appContext.filesDir, "torrserver-data")
     private val logFile = File(configDir, "torrserver.log")
     private var process: Process? = null
+    private val startMutex = Mutex()
     private val mutableState = MutableStateFlow<LocalTorrServerState>(LocalTorrServerState.Stopped)
     val state: StateFlow<LocalTorrServerState> = mutableState.asStateFlow()
 
     suspend fun ensureRunning(): LocalTorrServerState = withContext(ioDispatcher) {
-        if (isResponding()) return@withContext connectedState()
-        runCatching {
-            check(serverFile.exists() && serverFile.canExecute()) {
-                "Встроенный TorrServer отсутствует или Android запретил его запуск"
+        startMutex.withLock {
+            if (isResponding()) return@withLock connectedState()
+            runCatching {
+                check(serverFile.exists() && serverFile.canExecute()) {
+                    "Встроенный TorrServer отсутствует или Android запретил его запуск"
+                }
+                mutableState.value = LocalTorrServerState.Starting
+                startProcess()
+                repeat(START_ATTEMPTS) {
+                    delay(START_RETRY_MS)
+                    if (isResponding()) return@withLock connectedState()
+                }
+                error("Локальный TorrServer не ответил после запуска")
+            }.getOrElse { error ->
+                LocalTorrServerState.Failed(error.message ?: "Не удалось запустить локальный TorrServer")
+                    .also { mutableState.value = it }
             }
-            mutableState.value = LocalTorrServerState.Starting
-            startProcess()
-            repeat(START_ATTEMPTS) {
-                delay(START_RETRY_MS)
-                if (isResponding()) return@withContext connectedState()
-            }
-            error("Локальный TorrServer не ответил после запуска")
-        }.getOrElse { error ->
-            LocalTorrServerState.Failed(error.message ?: "Не удалось запустить локальный TorrServer")
-                .also { mutableState.value = it }
         }
     }
 
@@ -89,6 +94,13 @@ class LocalTorrServerManager(
     private suspend fun connectedState(): LocalTorrServerState.Running {
         val result = repository.testConnection(LOCAL_ENDPOINT) as? AppResult.Success
         val version = result?.value?.version.orEmpty()
+        when (val configured = repository.enableBuiltInSearch(LOCAL_ENDPOINT)) {
+            is AppResult.Success -> if (configured.value) {
+                mutableState.value = LocalTorrServerState.PreparingSearch
+                delay(SEARCH_PREPARE_MS)
+            }
+            is AppResult.Failure -> Unit
+        }
         return LocalTorrServerState.Running(version).also { mutableState.value = it }
     }
 
@@ -97,6 +109,7 @@ class LocalTorrServerManager(
         private const val SERVER_LIBRARY = "libtorrserver.so"
         private const val START_ATTEMPTS = 15
         private const val START_RETRY_MS = 1_000L
+        private const val SEARCH_PREPARE_MS = 8_000L
     }
 }
 
@@ -104,6 +117,7 @@ sealed interface LocalTorrServerState {
     data object Stopped : LocalTorrServerState
     data class Downloading(val percent: Int) : LocalTorrServerState
     data object Starting : LocalTorrServerState
+    data object PreparingSearch : LocalTorrServerState
     data class Running(val version: String) : LocalTorrServerState
     data class Failed(val message: String) : LocalTorrServerState
 }

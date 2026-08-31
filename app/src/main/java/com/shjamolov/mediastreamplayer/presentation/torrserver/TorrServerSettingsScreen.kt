@@ -55,6 +55,7 @@ fun TorrServerSettingsScreen(viewModel: TorrServerViewModel) {
                 LocalTorrServerState.Stopped -> stringResource(R.string.local_server_stopped) to false
                 is LocalTorrServerState.Downloading -> stringResource(R.string.local_server_downloading, status.percent) to true
                 LocalTorrServerState.Starting -> stringResource(R.string.local_server_starting) to true
+                LocalTorrServerState.PreparingSearch -> stringResource(R.string.local_search_preparing) to true
                 is LocalTorrServerState.Running -> stringResource(R.string.local_server_running, status.version) to true
                 is LocalTorrServerState.Failed -> stringResource(R.string.local_server_failed, status.message) to false
             }

@@ -11,6 +11,7 @@ interface TorrServerRepository {
     suspend fun addTorrent(endpoint: TorrServerEndpoint, link: String, title: String, poster: String?): AppResult<TorrentContent>
     fun playbackSource(endpoint: TorrServerEndpoint, content: TorrentContent, fileId: Int): TorrentPlaybackSource
     suspend fun search(endpoint: TorrServerEndpoint, query: String): AppResult<List<TorrentSearchResult>>
+    suspend fun enableBuiltInSearch(endpoint: TorrServerEndpoint): AppResult<Boolean>
 }
 
 data class TorrServerStatus(val version: String, val isMatrix: Boolean)

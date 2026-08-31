@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -71,24 +70,7 @@ fun TorrentSourceScreen(viewModel: TorrentPlaybackViewModel) {
                     }
                 }
             }
-            Text(stringResource(R.string.torrent_manual), style = MaterialTheme.typography.titleMedium)
-            BasicTextField(
-                value = state.link,
-                onValueChange = viewModel::setLink,
-                singleLine = false,
-                textStyle = TextStyle(color = Color.White, fontSize = 18.sp),
-                modifier = Modifier.fillMaxWidth().background(Color(0xFF17384B), RoundedCornerShape(10.dp)).padding(16.dp),
-                decorationBox = { inner ->
-                    if (state.link.isBlank()) Text(stringResource(R.string.torrent_link_hint), color = Color.Gray)
-                    inner()
-                },
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = viewModel::load, enabled = !state.loading) {
-                    Text(stringResource(if (state.loading) R.string.torrent_loading else R.string.torrent_load))
-                }
-                Button(onClick = viewModel::close) { Text(stringResource(R.string.cancel)) }
-            }
+            Button(onClick = viewModel::close, enabled = !state.loading) { Text(stringResource(R.string.cancel)) }
             if (state.loading) Text(stringResource(R.string.torrent_metadata_wait), color = Color(0xFFFFC857))
             state.error?.let {
                 Text(

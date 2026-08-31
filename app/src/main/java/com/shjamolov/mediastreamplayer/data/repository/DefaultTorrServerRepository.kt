@@ -20,6 +20,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -32,6 +33,25 @@ class DefaultTorrServerRepository(
     private val client: OkHttpClient,
     private val json: Json,
 ) : TorrServerRepository {
+    override suspend fun enableBuiltInSearch(endpoint: TorrServerEndpoint): AppResult<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val current = settingsRequest(endpoint, buildJsonObject { put("action", "get") })
+            if (current["EnableRutorSearch"]?.jsonPrimitive?.contentOrNull.toBoolean()) {
+                return@withContext AppResult.Success(false)
+            }
+            val enabled = JsonObject(current + ("EnableRutorSearch" to JsonPrimitive(true)))
+            settingsRequest(endpoint, buildJsonObject {
+                put("action", "set")
+                put("sets", enabled)
+            }, expectJson = false)
+            AppResult.Success(true)
+        } catch (error: IOException) {
+            AppResult.Failure(AppError.Network(error))
+        } catch (error: Exception) {
+            AppResult.Failure(AppError.Unexpected(error))
+        }
+    }
+
     override suspend fun testConnection(endpoint: TorrServerEndpoint): AppResult<TorrServerStatus> =
         withContext(Dispatchers.IO) {
             try {
@@ -131,7 +151,7 @@ class DefaultTorrServerRepository(
                         size = item.string("Size"),
                         seeders = item.string("Seed").toIntOrNull() ?: 0,
                         peers = item.string("Peer").toIntOrNull() ?: 0,
-                        quality = item.string("VideoQuality").toIntOrNull()?.takeIf { it > 0 },
+                        quality = normalizeVideoQuality(item.string("VideoQuality").toIntOrNull()),
                         magnetOrLink = source,
                     )
                 }.sortedWith(compareByDescending<TorrentSearchResult> { it.seeders }.thenByDescending { it.quality ?: 0 })
@@ -154,6 +174,27 @@ class DefaultTorrServerRepository(
             if (!response.isSuccessful) throw HttpStatusException(response.code)
             json.parseToJsonElement(response.body?.string().orEmpty()).jsonObject
         }
+    }
+
+    private fun settingsRequest(endpoint: TorrServerEndpoint, payload: JsonObject, expectJson: Boolean = true): JsonObject {
+        val body = json.encodeToString(JsonObject.serializer(), payload)
+            .toRequestBody("application/json".toMediaType())
+        val request = Request.Builder().url(endpoint.baseUrl.trimEnd('/') + "/settings").post(body).apply {
+            if (endpoint.username != null) header("Authorization", Credentials.basic(endpoint.username, checkNotNull(endpoint.password)))
+        }.build()
+        return client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw HttpStatusException(response.code)
+            if (!expectJson) JsonObject(emptyMap())
+            else json.parseToJsonElement(response.body?.string().orEmpty()).jsonObject
+        }
+    }
+
+    private fun normalizeVideoQuality(value: Int?): Int? = when (value) {
+        null, 0 -> null
+        in 100..102 -> 720
+        in 200..203 -> 1080
+        in 300..308 -> 2160
+        else -> value
     }
 
     private fun JsonObject.toContent(): TorrentContent? {
