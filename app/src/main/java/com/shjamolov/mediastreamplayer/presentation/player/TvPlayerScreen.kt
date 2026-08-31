@@ -92,11 +92,13 @@ fun TvPlayerScreen(
                 modifier = Modifier.align(Alignment.TopStart),
             )
 
-            Text(
-                text = "↑ предыдущий канал   •   ↓ следующий канал",
-                modifier = Modifier.align(Alignment.BottomCenter).background(Color(0x99000000)).padding(horizontal = 22.dp, vertical = 10.dp),
-                color = Color(0xFFB7C9D6),
-            )
+            Row(
+                modifier = Modifier.align(Alignment.BottomCenter).background(Color(0x99000000)).padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Button(onClick = onPreviousChannel) { Text("↑ Предыдущий") }
+                Button(onClick = onNextChannel) { Text("↓ Следующий") }
+            }
 
             val failedState = state as? PlaybackUiState.Failed
             if (failedState != null) {

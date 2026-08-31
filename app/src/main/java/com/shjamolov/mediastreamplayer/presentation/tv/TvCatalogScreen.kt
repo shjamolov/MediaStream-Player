@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -107,34 +108,38 @@ private fun CatalogContent(
     onFilterSelected: (TvCatalogFilter) -> Unit,
     onChannelSelected: (TvChannelStreams) -> Unit,
 ) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val compact = maxWidth < 600.dp
     Column(modifier = Modifier.fillMaxSize().background(AppBackground)) {
-        CatalogHeader(channelCount = state.visibleChannels.size)
+        CatalogHeader(channelCount = state.visibleChannels.size, compact = compact)
         FilterRows(
             catalog = state.catalog,
             selectedFilter = state.selectedFilter,
             onFilterSelected = onFilterSelected,
+            compact = compact,
         )
         if (state.visibleChannels.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(text = stringResource(R.string.tv_catalog_empty))
             }
         } else {
-            ChannelGrid(state.visibleChannels, onChannelSelected)
+            ChannelGrid(state.visibleChannels, onChannelSelected, compact)
         }
+    }
     }
 }
 
 @Composable
-private fun CatalogHeader(channelCount: Int) {
+private fun CatalogHeader(channelCount: Int, compact: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 42.dp, top = 28.dp, end = 42.dp, bottom = 12.dp),
+            .padding(start = if (compact) 16.dp else 42.dp, top = if (compact) 16.dp else 28.dp, end = if (compact) 16.dp else 42.dp, bottom = 12.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
         Text(
             text = stringResource(R.string.live_tv),
-            style = MaterialTheme.typography.headlineLarge,
+            style = if (compact) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.width(16.dp))
@@ -150,7 +155,9 @@ private fun FilterRows(
     catalog: TvCatalog,
     selectedFilter: TvCatalogFilter,
     onFilterSelected: (TvCatalogFilter) -> Unit,
+    compact: Boolean,
 ) {
+    val edge = if (compact) 16.dp else 42.dp
     val availableCountries = remember(catalog) {
         val codes = catalog.channels.mapNotNull { it.channel.countryCode }.toSet()
         catalog.countries
@@ -164,11 +171,11 @@ private fun FilterRows(
 
     Text(
         text = stringResource(R.string.countries),
-        modifier = Modifier.padding(horizontal = 42.dp),
+        modifier = Modifier.padding(horizontal = edge),
         style = MaterialTheme.typography.titleMedium,
     )
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 42.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(horizontal = edge, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item(key = "all") {
@@ -190,11 +197,11 @@ private fun FilterRows(
 
     Text(
         text = stringResource(R.string.categories),
-        modifier = Modifier.padding(horizontal = 42.dp),
+        modifier = Modifier.padding(horizontal = edge),
         style = MaterialTheme.typography.titleMedium,
     )
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 42.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(horizontal = edge, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         items(availableCategoryIds, key = { it.id }) { category ->
@@ -226,11 +233,12 @@ private fun FilterButton(label: String, selected: Boolean, onClick: () -> Unit) 
 private fun ChannelGrid(
     channels: List<TvChannelStreams>,
     onChannelSelected: (TvChannelStreams) -> Unit,
+    compact: Boolean,
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 220.dp),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 42.dp, top = 12.dp, end = 42.dp, bottom = 40.dp),
+        contentPadding = PaddingValues(start = if (compact) 16.dp else 42.dp, top = 12.dp, end = if (compact) 16.dp else 42.dp, bottom = 40.dp),
         horizontalArrangement = Arrangement.spacedBy(18.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {

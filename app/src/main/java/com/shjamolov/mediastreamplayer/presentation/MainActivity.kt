@@ -9,11 +9,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -110,9 +113,40 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AppShell(section: AppSection, onSectionSelected: (AppSection) -> Unit, content: @Composable () -> Unit) {
     Surface(modifier = Modifier.fillMaxSize().background(AppBackground)) {
-        Row {
-            AppNavigation(section, onSectionSelected)
-            Box(Modifier.weight(1f).fillMaxHeight()) { content() }
+        BoxWithConstraints {
+            if (maxWidth < 600.dp) {
+                Column {
+                    Box(Modifier.weight(1f).fillMaxWidth()) { content() }
+                    MobileNavigation(section, onSectionSelected)
+                }
+            } else {
+                Row {
+                    AppNavigation(section, onSectionSelected)
+                    Box(Modifier.weight(1f).fillMaxHeight()) { content() }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MobileNavigation(section: AppSection, onSectionSelected: (AppSection) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(76.dp).background(AppSurface).padding(horizontal = 4.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AppSection.entries.forEach { item ->
+            val selected = section == item
+            Column(
+                modifier = Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(12.dp))
+                    .background(if (selected) AppAccent else Color.Transparent)
+                    .clickable { onSectionSelected(item) }.padding(vertical = 6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(item.symbol, color = if (selected) Color(0xFF00131B) else Color.White, fontWeight = FontWeight.Bold)
+                Text(item.mobileLabel, color = if (selected) Color(0xFF00131B) else AppTextSecondary, style = MaterialTheme.typography.labelSmall)
+            }
         }
     }
 }
@@ -151,10 +185,10 @@ private fun NavigationItem(item: AppSection, selected: Boolean, onClick: () -> U
     }
 }
 
-private enum class AppSection(val symbol: String, val label: String) {
-    TV("TV", "Эфир"),
-    MOVIES("▶", "Фильмы"),
+private enum class AppSection(val symbol: String, val label: String, val mobileLabel: String = label) {
+    TV("TV", "Эфир", "TV"),
+    MOVIES("▶", "Фильмы", "Кино"),
     SERIES("▦", "Сериалы"),
     SEARCH("⌕", "Поиск"),
-    SETTINGS("⚙", "Настройки"),
+    SETTINGS("⚙", "Настройки", "Ещё"),
 }

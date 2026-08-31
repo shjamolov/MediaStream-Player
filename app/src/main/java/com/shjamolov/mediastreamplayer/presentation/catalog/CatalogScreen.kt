@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
@@ -180,7 +182,7 @@ private fun FeaturedMedia(item: CatalogItem, onClick: (CatalogItem) -> Unit) {
                 Brush.horizontalGradient(listOf(AppBackground, AppBackground.copy(alpha = 0.78f), Color.Transparent)),
             ),
         )
-        Column(Modifier.fillMaxHeight().width(570.dp).padding(start = 48.dp, top = 34.dp, bottom = 28.dp), verticalArrangement = Arrangement.Center) {
+        Column(Modifier.fillMaxHeight().fillMaxWidth().widthIn(max = 570.dp).padding(start = 20.dp, end = 16.dp, top = 28.dp, bottom = 24.dp), verticalArrangement = Arrangement.Center) {
             Text("ВЫБОР РЕДАКЦИИ", color = Color(0xFFFF6B00), fontWeight = FontWeight.Bold)
             Text(item.title, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black, maxLines = 2)
             Text(
@@ -242,14 +244,63 @@ private fun DetailsScreen(
     onWatch: () -> Unit,
 ) {
     val item = details.item
-    val uriHandler = LocalUriHandler.current
     var trailerMessageVisible by remember(item.id) { mutableStateOf(false) }
     Box(Modifier.fillMaxSize().background(AppBackground)) {
         AsyncImage(item.backdropPath?.let { IMAGE_BASE + it }, item.title, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(AppBackground, AppBackground.copy(.94f), AppBackground.copy(.60f)))))
-    Row(Modifier.fillMaxSize().padding(48.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-        AsyncImage(item.posterPath?.let { IMAGE_BASE + it }, item.title, Modifier.width(250.dp).height(375.dp).clip(RoundedCornerShape(16.dp)), contentScale = ContentScale.Crop)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val compact = maxWidth < 600.dp
+        val poster: @Composable () -> Unit = {
+            AsyncImage(
+                item.posterPath?.let { IMAGE_BASE + it },
+                item.title,
+                Modifier.width(if (compact) 190.dp else 250.dp).height(if (compact) 285.dp else 375.dp).clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop,
+            )
+        }
+        if (compact) {
+            Column(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                poster()
+                DetailsInfo(details, loading, detailsLoaded, detailsError, favorite, episodes, loadingEpisodes, onFavorite, onSeason, onRecommendation, onWatch, trailerMessageVisible) {
+                    trailerMessageVisible = true
+                }
+            }
+        } else {
+            Row(Modifier.fillMaxSize().padding(48.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                poster()
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                    DetailsInfo(details, loading, detailsLoaded, detailsError, favorite, episodes, loadingEpisodes, onFavorite, onSeason, onRecommendation, onWatch, trailerMessageVisible) {
+                        trailerMessageVisible = true
+                    }
+                }
+            }
+        }
+    }
+    }
+}
+
+@Composable
+private fun DetailsInfo(
+    details: CatalogDetails,
+    loading: Boolean,
+    detailsLoaded: Boolean,
+    detailsError: CatalogError?,
+    favorite: Boolean,
+    episodes: List<com.shjamolov.mediastreamplayer.domain.model.CatalogEpisode>,
+    loadingEpisodes: Boolean,
+    onFavorite: () -> Unit,
+    onSeason: (Int) -> Unit,
+    onRecommendation: (CatalogItem) -> Unit,
+    onWatch: () -> Unit,
+    trailerMessageVisible: Boolean,
+    onTrailerUnavailable: () -> Unit,
+) {
+    val item = details.item
+    val uriHandler = LocalUriHandler.current
+    Column(Modifier.fillMaxWidth()) {
             Text(item.title, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
             Text(listOfNotNull(
                 item.releaseDate?.take(4),
@@ -259,17 +310,15 @@ private fun DetailsScreen(
             ).joinToString(" • "), color = Color(0xFFFFC857))
             if (details.genres.isNotEmpty()) Text(details.genres.joinToString(" • "), Modifier.padding(top = 10.dp))
             Text(item.overview.orEmpty(), Modifier.padding(vertical = 20.dp), maxLines = 7, overflow = TextOverflow.Ellipsis)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = onWatch) {
-                    Text(stringResource(R.string.watch))
-                }
-                Button(onClick = {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                item { Button(onClick = onWatch) { Text(stringResource(R.string.watch)) } }
+                item { Button(onClick = {
                     details.trailer?.let { uriHandler.openUri("https://www.youtube.com/watch?v=${it.key}") }
-                        ?: run { trailerMessageVisible = true }
+                        ?: onTrailerUnavailable()
                 }) {
                     Text(stringResource(R.string.watch_trailer))
-                }
-                Button(onClick = onFavorite) { Text(stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite)) }
+                } }
+                item { Button(onClick = onFavorite) { Text(stringResource(if (favorite) R.string.remove_favorite else R.string.add_favorite)) } }
             }
             if (trailerMessageVisible) {
                 Text(stringResource(R.string.trailer_unavailable), Modifier.padding(top = 12.dp), color = Color(0xFFFFC857))
@@ -313,7 +362,5 @@ private fun DetailsScreen(
                     }
                 }
             }
-        }
-    }
     }
 }

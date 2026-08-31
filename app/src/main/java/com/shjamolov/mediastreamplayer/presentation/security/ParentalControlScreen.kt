@@ -3,6 +3,7 @@ package com.shjamolov.mediastreamplayer.presentation.security
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,16 +36,18 @@ fun ParentalControlScreen(viewModel: ParentalControlViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var pin by remember { mutableStateOf("") }
     var confirmation by remember { mutableStateOf("") }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val compact = maxWidth < 600.dp
     Column(
-        Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 36.dp),
+        Modifier.fillMaxSize().padding(horizontal = if (compact) 20.dp else 64.dp, vertical = if (compact) 16.dp else 36.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(stringResource(R.string.parental_control), style = MaterialTheme.typography.headlineLarge)
         Spacer(Modifier.height(16.dp))
         Text(stringResource(if (!state.hasPin || state.changingPin) R.string.create_pin else R.string.enter_pin))
-        PinField(pin) { pin = it.filter(Char::isDigit).take(8) }
-        if (!state.hasPin || state.changingPin) PinField(confirmation) { confirmation = it.filter(Char::isDigit).take(8) }
+        PinField(pin, compact) { pin = it.filter(Char::isDigit).take(8) }
+        if (!state.hasPin || state.changingPin) PinField(confirmation, compact) { confirmation = it.filter(Char::isDigit).take(8) }
         state.message?.let { Text(messageText(it, state.lockRemainingMillis), color = messageColor(it), modifier = Modifier.padding(12.dp)) }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (state.unlocked && !state.changingPin) {
@@ -62,15 +65,16 @@ fun ParentalControlScreen(viewModel: ParentalControlViewModel) {
         }
         Text(stringResource(R.string.parental_session_note), Modifier.padding(top = 20.dp), color = Color(0xFF9CB3C5))
     }
+    }
 }
 
 @Composable
-private fun PinField(value: String, onChange: (String) -> Unit) {
+private fun PinField(value: String, compact: Boolean, onChange: (String) -> Unit) {
     BasicTextField(
         value = value, onValueChange = onChange, singleLine = true,
         visualTransformation = PasswordVisualTransformation(),
         textStyle = TextStyle(color = Color.White, fontSize = 24.sp),
-        modifier = Modifier.padding(top = 12.dp).fillMaxWidth(0.5f)
+        modifier = Modifier.padding(top = 12.dp).fillMaxWidth(if (compact) 1f else 0.5f)
             .background(Color(0xFF17384B), RoundedCornerShape(10.dp)).padding(16.dp),
         decorationBox = { inner -> if (value.isEmpty()) Text(stringResource(R.string.pin_hint), color = Color.Gray); inner() },
     )

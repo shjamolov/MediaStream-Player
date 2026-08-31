@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -32,8 +33,9 @@ fun TorrentSourceScreen(viewModel: TorrentPlaybackViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val content = state.content
     BackHandler(onBack = viewModel::close)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
     Column(
-        Modifier.fillMaxSize().background(Color(0xFF08151D)).padding(horizontal = 64.dp, vertical = 20.dp),
+        Modifier.fillMaxSize().background(Color(0xFF08151D)).padding(horizontal = if (maxWidth < 600.dp) 20.dp else 64.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text(stringResource(R.string.torrent_source_title), style = MaterialTheme.typography.headlineLarge)
@@ -88,6 +90,7 @@ fun TorrentSourceScreen(viewModel: TorrentPlaybackViewModel) {
                 }
             }
         }
+    }
     }
 }
 
