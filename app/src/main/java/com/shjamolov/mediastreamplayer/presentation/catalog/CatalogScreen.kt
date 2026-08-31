@@ -79,7 +79,14 @@ fun CatalogScreen(
             onFavorite = viewModel::toggleFavorite,
             onSeason = viewModel::loadSeason,
             onRecommendation = viewModel::open,
-            onWatch = { torrentViewModel.open(it.item.title, it.item.posterPath?.let { path -> IMAGE_BASE + path }) },
+            onWatch = {
+                torrentViewModel.open(
+                    title = it.item.title,
+                    poster = it.item.posterPath?.let { path -> IMAGE_BASE + path },
+                    year = it.item.releaseDate,
+                    imdbId = it.imdbId,
+                )
+            },
         )
         return
     }

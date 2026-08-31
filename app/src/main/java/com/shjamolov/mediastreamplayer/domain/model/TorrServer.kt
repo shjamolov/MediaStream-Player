@@ -43,3 +43,13 @@ data class TorrentPlaybackSource(
     val url: String,
     val requestHeaders: Map<String, String> = emptyMap(),
 )
+
+data class TorrentSearchResult(
+    val title: String,
+    val source: String,
+    val size: String,
+    val seeders: Int,
+    val peers: Int,
+    val quality: Int?,
+    val magnetOrLink: String,
+)

@@ -57,4 +57,22 @@ class DefaultTorrServerRepositoryTest {
         assertEquals("Movie.mkv", result.value.files.single().path)
         assertEquals("http://10.0.2.2:8090/play/abc123/1", repository.playbackSource(endpoint, result.value, 1).url)
     }
+
+    @Test
+    fun search_mapsAndSortsTorznabResultsBySeeders() = runTest {
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body(
+                    """[{"Title":"1080p","Size":"8 GB","Tracker":"A","Seed":10,"Peer":2,"Magnet":"magnet:?a","VideoQuality":1080},{"Title":"4K","Size":"30 GB","Tracker":"B","Seed":50,"Peer":4,"Magnet":"magnet:?b","VideoQuality":2160}]"""
+                        .toResponseBody("application/json".toMediaType()),
+                ).build()
+        }.build()
+        val repository = DefaultTorrServerRepository(client, Json { ignoreUnknownKeys = true })
+        val endpoint = TorrServerEndpoint(TorrServerMode.REMOTE, "http://10.0.2.2:8090")
+        val result = repository.search(endpoint, "Movie 2026") as AppResult.Success
+
+        assertEquals("4K", result.value.first().title)
+        assertEquals(50, result.value.first().seeders)
+        assertEquals("magnet:?b", result.value.first().magnetOrLink)
+    }
 }

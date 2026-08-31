@@ -6,6 +6,7 @@ import com.shjamolov.mediastreamplayer.domain.model.TorrServerEndpoint
 import com.shjamolov.mediastreamplayer.domain.model.TorrentContent
 import com.shjamolov.mediastreamplayer.domain.model.TorrentPlaybackSource
 import com.shjamolov.mediastreamplayer.domain.model.TorrentVideoFile
+import com.shjamolov.mediastreamplayer.domain.model.TorrentSearchResult
 import com.shjamolov.mediastreamplayer.domain.repository.TorrServerRepository
 import com.shjamolov.mediastreamplayer.domain.repository.TorrServerStatus
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.io.IOException
 
 class DefaultTorrServerRepository(
@@ -103,6 +105,43 @@ class DefaultTorrServerRepository(
             url = "${endpoint.baseUrl.trimEnd('/')}/play/${content.hash}/${file.id}",
             requestHeaders = headers,
         )
+    }
+
+    override suspend fun search(
+        endpoint: TorrServerEndpoint,
+        query: String,
+    ): AppResult<List<TorrentSearchResult>> = withContext(Dispatchers.IO) {
+        try {
+            val url = endpoint.baseUrl.trimEnd('/').toHttpUrl().newBuilder()
+                .addPathSegment("search")
+                .addQueryParameter("query", query)
+                .build()
+            val request = Request.Builder().url(url).apply {
+                if (endpoint.username != null) header("Authorization", Credentials.basic(endpoint.username, checkNotNull(endpoint.password)))
+            }.build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@withContext AppResult.Failure(AppError.Configuration("TorrServer search HTTP ${response.code}"))
+                val results = json.parseToJsonElement(response.body?.string().orEmpty()).jsonArray.mapNotNull { element ->
+                    val item = element.jsonObject
+                    val source = item.string("Magnet").ifBlank { item.string("Link") }
+                    if (source.isBlank()) return@mapNotNull null
+                    TorrentSearchResult(
+                        title = item.string("Title").ifBlank { item.string("Name") },
+                        source = item.string("Tracker"),
+                        size = item.string("Size"),
+                        seeders = item.string("Seed").toIntOrNull() ?: 0,
+                        peers = item.string("Peer").toIntOrNull() ?: 0,
+                        quality = item.string("VideoQuality").toIntOrNull()?.takeIf { it > 0 },
+                        magnetOrLink = source,
+                    )
+                }.sortedWith(compareByDescending<TorrentSearchResult> { it.seeders }.thenByDescending { it.quality ?: 0 })
+                AppResult.Success(results)
+            }
+        } catch (error: IOException) {
+            AppResult.Failure(AppError.Network(error))
+        } catch (error: Exception) {
+            AppResult.Failure(AppError.Unexpected(error))
+        }
     }
 
     private fun post(endpoint: TorrServerEndpoint, payload: JsonObject): JsonObject {

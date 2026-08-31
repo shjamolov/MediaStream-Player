@@ -82,6 +82,12 @@
     <string name="details_load_failed">Не удалось загрузить подробную информацию. Проверьте TMDB в разделе «Диагностика».</string>
     <string name="watch">Смотреть</string>
     <string name="torrent_source_title">Источник просмотра</string>
+    <string name="torznab_results">Автоматический поиск Torznab</string>
+    <string name="torznab_search">Искать</string>
+    <string name="torznab_searching">Поиск раздач…</string>
+    <string name="torznab_empty">Раздачи не найдены. Можно изменить запрос или вставить magnet вручную.</string>
+    <string name="torznab_not_configured">Поиск недоступен. В TorrServer откройте Settings → Torznab, добавьте Jackett/Prowlarr и включите Torznab Search.</string>
+    <string name="torrent_manual">Ручная ссылка</string>
     <string name="torrent_link_hint">Вставьте magnet-ссылку или прямую ссылку на .torrent</string>
     <string name="torrent_load">Загрузить</string>
     <string name="torrent_loading">Загрузка…</string>
