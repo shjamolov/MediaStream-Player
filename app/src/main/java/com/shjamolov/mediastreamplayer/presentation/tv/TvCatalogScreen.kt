@@ -46,6 +46,11 @@ import coil3.compose.AsyncImage
 import com.shjamolov.mediastreamplayer.R
 import com.shjamolov.mediastreamplayer.domain.model.TvCatalog
 import com.shjamolov.mediastreamplayer.domain.model.TvChannelStreams
+import com.shjamolov.mediastreamplayer.presentation.theme.AppAccent
+import com.shjamolov.mediastreamplayer.presentation.theme.AppBackground
+import com.shjamolov.mediastreamplayer.presentation.theme.AppSurface
+import com.shjamolov.mediastreamplayer.presentation.theme.AppSurfaceRaised
+import com.shjamolov.mediastreamplayer.presentation.theme.AppTextSecondary
 
 @Composable
 fun TvCatalogScreen(
@@ -54,17 +59,15 @@ fun TvCatalogScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            when (val currentState = state) {
-                TvCatalogUiState.Loading -> LoadingState()
-                is TvCatalogUiState.Error -> ErrorState(currentState.type, viewModel::retry)
-                is TvCatalogUiState.Content -> CatalogContent(
-                    state = currentState,
-                    onFilterSelected = viewModel::selectFilter,
-                    onChannelSelected = onChannelSelected,
-                )
-            }
+    Surface(modifier = Modifier.fillMaxSize().background(AppBackground)) {
+        when (val currentState = state) {
+            TvCatalogUiState.Loading -> LoadingState()
+            is TvCatalogUiState.Error -> ErrorState(currentState.type, viewModel::retry)
+            is TvCatalogUiState.Content -> CatalogContent(
+                state = currentState,
+                onFilterSelected = viewModel::selectFilter,
+                onChannelSelected = onChannelSelected,
+            )
         }
     }
 }
@@ -104,7 +107,7 @@ private fun CatalogContent(
     onFilterSelected: (TvCatalogFilter) -> Unit,
     onChannelSelected: (TvChannelStreams) -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().background(AppBackground)) {
         CatalogHeader(channelCount = state.visibleChannels.size)
         FilterRows(
             catalog = state.catalog,
@@ -126,7 +129,7 @@ private fun CatalogHeader(channelCount: Int) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 48.dp, top = 32.dp, end = 48.dp, bottom = 16.dp),
+            .padding(start = 42.dp, top = 28.dp, end = 42.dp, bottom = 12.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
         Text(
@@ -137,7 +140,7 @@ private fun CatalogHeader(channelCount: Int) {
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = pluralStringResource(R.plurals.channel_count, channelCount, channelCount),
-            color = Color(0xFF9CB3C5),
+            color = AppTextSecondary,
         )
     }
 }
@@ -152,7 +155,7 @@ private fun FilterRows(
         val codes = catalog.channels.mapNotNull { it.channel.countryCode }.toSet()
         catalog.countries
             .filter { it.code in codes }
-            .sortedWith(compareBy({ it.code != "UZ" }, { it.name }))
+            .sortedBy { SUPPORTED_COUNTRY_ORDER.indexOf(it.code) }
     }
     val availableCategories = remember(catalog) {
         val ids = catalog.channels.flatMap { it.channel.categoryIds }.toSet()
@@ -161,11 +164,11 @@ private fun FilterRows(
 
     Text(
         text = stringResource(R.string.countries),
-        modifier = Modifier.padding(horizontal = 48.dp),
+        modifier = Modifier.padding(horizontal = 42.dp),
         style = MaterialTheme.typography.titleMedium,
     )
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(horizontal = 42.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item(key = "all") {
@@ -174,15 +177,6 @@ private fun FilterRows(
                 selected = selectedFilter == TvCatalogFilter.All,
                 onClick = { onFilterSelected(TvCatalogFilter.All) },
             )
-        }
-        if (catalog.channels.any { it.channel.isNsfw }) {
-            item(key = "adult") {
-                FilterButton(
-                    label = stringResource(R.string.adult_channels),
-                    selected = selectedFilter == TvCatalogFilter.Adult,
-                    onClick = { onFilterSelected(TvCatalogFilter.Adult) },
-                )
-            }
         }
         items(availableCountries, key = { it.code }) { country ->
             val filter = TvCatalogFilter.Country(country.code)
@@ -196,11 +190,11 @@ private fun FilterRows(
 
     Text(
         text = stringResource(R.string.categories),
-        modifier = Modifier.padding(horizontal = 48.dp),
+        modifier = Modifier.padding(horizontal = 42.dp),
         style = MaterialTheme.typography.titleMedium,
     )
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(horizontal = 42.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         items(availableCategories, key = { it.id }) { category ->
@@ -216,8 +210,15 @@ private fun FilterRows(
 
 @Composable
 private fun FilterButton(label: String, selected: Boolean, onClick: () -> Unit) {
-    Button(onClick = onClick) {
-        Text(text = if (selected) "✓ $label" else label)
+    var focused by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(18.dp)
+    Box(
+        modifier = Modifier.onFocusChanged { focused = it.hasFocus }
+            .border(if (focused) 2.dp else 1.dp, if (focused) Color.White else if (selected) AppAccent else Color(0xFF294354), shape)
+            .clip(shape).background(if (selected) AppAccent else AppSurface)
+            .clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 10.dp),
+    ) {
+        Text(text = label, color = if (selected) Color(0xFF00131B) else Color.White, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -229,7 +230,7 @@ private fun ChannelGrid(
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 220.dp),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 48.dp, top = 12.dp, end = 48.dp, bottom = 40.dp),
+        contentPadding = PaddingValues(start = 42.dp, top = 12.dp, end = 42.dp, bottom = 40.dp),
         horizontalArrangement = Arrangement.spacedBy(18.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
@@ -254,11 +255,11 @@ private fun ChannelCard(
             .onFocusChanged { focused = it.isFocused }
             .border(
                 width = if (focused) 3.dp else 1.dp,
-                color = if (focused) Color.White else Color(0xFF294354),
+                color = if (focused) AppAccent else Color(0xFF294354),
                 shape = shape,
             )
             .clip(shape)
-            .background(if (focused) Color(0xFF17384B) else Color(0xFF10242F))
+            .background(if (focused) AppSurfaceRaised else AppSurface)
             .clickable { onChannelSelected(item) }
             .padding(12.dp),
     ) {
@@ -294,7 +295,7 @@ private fun ChannelCard(
         Text(
             text = streamSummary(item),
             maxLines = 1,
-            color = Color(0xFF9CB3C5),
+            color = AppTextSecondary,
             style = MaterialTheme.typography.bodySmall,
         )
     }
@@ -304,3 +305,5 @@ private fun streamSummary(item: TvChannelStreams): String {
     val quality = item.streams.firstNotNullOfOrNull { it.quality } ?: "AUTO"
     return "$quality • ${item.streams.size} stream${if (item.streams.size == 1) "" else "s"}"
 }
+
+private val SUPPORTED_COUNTRY_ORDER = listOf("UZ", "RU", "KZ")

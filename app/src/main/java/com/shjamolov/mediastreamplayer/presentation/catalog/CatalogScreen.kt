@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalUriHandler
@@ -51,6 +53,11 @@ import com.shjamolov.mediastreamplayer.domain.model.CatalogItem
 import com.shjamolov.mediastreamplayer.domain.model.MediaType
 import com.shjamolov.mediastreamplayer.presentation.torrent.TorrentPlaybackViewModel
 import com.shjamolov.mediastreamplayer.presentation.torrent.TorrentSourceScreen
+import com.shjamolov.mediastreamplayer.presentation.theme.AppAccent
+import com.shjamolov.mediastreamplayer.presentation.theme.AppBackground
+import com.shjamolov.mediastreamplayer.presentation.theme.AppGold
+import com.shjamolov.mediastreamplayer.presentation.theme.AppSurface
+import com.shjamolov.mediastreamplayer.presentation.theme.AppTextSecondary
 
 private const val IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
@@ -90,7 +97,7 @@ fun CatalogScreen(
         )
         return
     }
-    Column(Modifier.fillMaxSize().padding(vertical = 28.dp)) {
+    Column(Modifier.fillMaxSize().background(AppBackground).padding(vertical = 28.dp)) {
         Row(Modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(if (searchMode) R.string.search else if (state.type == MediaType.MOVIE) R.string.movies else R.string.series),
@@ -113,10 +120,44 @@ fun CatalogScreen(
         } else if (state.items.isEmpty() && state.error == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(stringResource(R.string.catalog_empty)) }
         } else {
+            if (!searchMode) FeaturedMedia(state.items.first(), viewModel::open)
+            Text(
+                text = if (searchMode) "Результаты" else "Популярное сейчас",
+                modifier = Modifier.padding(start = 48.dp, top = 18.dp),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 48.dp, vertical = 24.dp),
+                contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) { items(state.items, key = { "${it.type}-${it.id.value}" }) { MediaCard(it, viewModel::open) } }
+        }
+    }
+}
+
+@Composable
+private fun FeaturedMedia(item: CatalogItem, onClick: (CatalogItem) -> Unit) {
+    Box(Modifier.fillMaxWidth().height(270.dp)) {
+        AsyncImage(
+            model = item.backdropPath?.let { IMAGE_BASE + it },
+            contentDescription = item.title,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.horizontalGradient(listOf(AppBackground, AppBackground.copy(alpha = 0.78f), Color.Transparent)),
+            ),
+        )
+        Column(Modifier.fillMaxHeight().width(570.dp).padding(start = 48.dp, top = 34.dp, bottom = 28.dp), verticalArrangement = Arrangement.Center) {
+            Text(item.title, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black, maxLines = 2)
+            Text(
+                listOfNotNull(item.releaseDate?.take(4), item.voteAverage?.let { "★ %.1f".format(it) }).joinToString("  •  "),
+                color = AppGold,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Text(item.overview.orEmpty(), maxLines = 3, overflow = TextOverflow.Ellipsis, color = AppTextSecondary, modifier = Modifier.padding(vertical = 12.dp))
+            Button(onClick = { onClick(item) }) { Text("Подробнее") }
         }
     }
 }
@@ -129,7 +170,7 @@ private fun SearchField(value: String, onChange: (String) -> Unit) {
         singleLine = true,
         textStyle = TextStyle(color = Color.White, fontSize = 20.sp),
         modifier = Modifier.padding(horizontal = 48.dp, vertical = 18.dp).fillMaxWidth()
-            .background(Color(0xFF17384B), RoundedCornerShape(10.dp)).padding(16.dp),
+            .background(AppSurface, RoundedCornerShape(14.dp)).border(1.dp, AppAccent.copy(alpha = .45f), RoundedCornerShape(14.dp)).padding(16.dp),
         decorationBox = { inner -> if (value.isEmpty()) Text(stringResource(R.string.search_hint), color = Color.Gray); inner() },
     )
 }
@@ -139,15 +180,15 @@ private fun MediaCard(item: CatalogItem, onClick: (CatalogItem) -> Unit) {
     var focused by remember { mutableStateOf(false) }
     Column(
         Modifier.width(190.dp).onFocusChanged { focused = it.isFocused }
-            .border(if (focused) 3.dp else 1.dp, if (focused) Color.White else Color(0xFF294354), RoundedCornerShape(12.dp))
-            .clip(RoundedCornerShape(12.dp)).clickable { onClick(item) }.focusable().padding(8.dp),
+            .border(if (focused) 3.dp else 1.dp, if (focused) AppAccent else Color(0xFF294354), RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(14.dp)).background(AppSurface).clickable { onClick(item) }.focusable().padding(8.dp),
     ) {
         AsyncImage(
             model = item.posterPath?.let { IMAGE_BASE + it }, contentDescription = item.title,
             modifier = Modifier.fillMaxWidth().height(270.dp).background(Color(0xFF10242F)), contentScale = ContentScale.Crop,
         )
         Text(item.title, Modifier.padding(top = 8.dp), maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
-        Text("★ ${item.voteAverage?.let { "%.1f".format(it) } ?: "—"}", color = Color(0xFFFFC857))
+        Text("★ ${item.voteAverage?.let { "%.1f".format(it) } ?: "—"}", color = AppGold)
     }
 }
 
@@ -168,8 +209,11 @@ private fun DetailsScreen(
     val item = details.item
     val uriHandler = LocalUriHandler.current
     var trailerMessageVisible by remember(item.id) { mutableStateOf(false) }
+    Box(Modifier.fillMaxSize().background(AppBackground)) {
+        AsyncImage(item.backdropPath?.let { IMAGE_BASE + it }, item.title, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(AppBackground, AppBackground.copy(.94f), AppBackground.copy(.60f)))))
     Row(Modifier.fillMaxSize().padding(48.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-        AsyncImage(item.posterPath?.let { IMAGE_BASE + it }, item.title, Modifier.width(250.dp).height(375.dp), contentScale = ContentScale.Crop)
+        AsyncImage(item.posterPath?.let { IMAGE_BASE + it }, item.title, Modifier.width(250.dp).height(375.dp).clip(RoundedCornerShape(16.dp)), contentScale = ContentScale.Crop)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             Text(item.title, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
             Text(listOfNotNull(
@@ -235,5 +279,6 @@ private fun DetailsScreen(
                 }
             }
         }
+    }
     }
 }

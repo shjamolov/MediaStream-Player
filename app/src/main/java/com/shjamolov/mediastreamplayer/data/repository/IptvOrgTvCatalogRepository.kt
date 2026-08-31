@@ -40,9 +40,14 @@ class IptvOrgTvCatalogRepository(
 }
 
 internal fun IptvOrgSnapshot.toDomain(adultContentAccess: AdultContentAccess): TvCatalog {
+    val allowedChannelIds = channels
+        .asSequence()
+        .filter { it.country.uppercase() in SUPPORTED_TV_COUNTRIES }
+        .map { it.id }
+        .toSet()
     val streamsByChannel = streams
         .asSequence()
-        .filter { !it.channel.isNullOrBlank() && it.url.isNotBlank() }
+        .filter { it.channel in allowedChannelIds && it.url.isNotBlank() }
         .groupBy { checkNotNull(it.channel) }
     val languagesByChannel = feeds
         .groupBy { it.channel }
@@ -53,6 +58,7 @@ internal fun IptvOrgSnapshot.toDomain(adultContentAccess: AdultContentAccess): T
 
     val playableChannels = channels
         .asSequence()
+        .filter { it.id in allowedChannelIds }
         .filter { adultContentAccess == AdultContentAccess.UNLOCKED || !it.isNsfw }
         .mapNotNull { channel ->
             val channelStreams = streamsByChannel[channel.id]
@@ -94,7 +100,7 @@ internal fun IptvOrgSnapshot.toDomain(adultContentAccess: AdultContentAccess): T
     return TvCatalog(
         channels = playableChannels,
         categories = categories.map { TvCategory(it.id, it.name, it.description) },
-        countries = countries.map {
+        countries = countries.filter { it.code.uppercase() in SUPPORTED_TV_COUNTRIES }.map {
             TvCountry(it.code, it.name, it.languages.toSet(), it.flag)
         },
         languages = languages.map { TvLanguage(it.code, it.name) },
@@ -112,3 +118,5 @@ private fun qualityRank(stream: StreamDto): Int =
     QUALITY_NUMBER.find(stream.quality.orEmpty())?.value?.toIntOrNull() ?: 0
 
 private val QUALITY_NUMBER = Regex("\\d+")
+
+internal val SUPPORTED_TV_COUNTRIES = setOf("UZ", "RU", "KZ")
