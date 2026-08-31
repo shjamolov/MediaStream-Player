@@ -18,5 +18,5 @@ val coreModule = module {
     single { AppSettingsStore(androidContext()) }
     single { AndroidCredentialCipher() }
     single { TorrServerSettingsStore(androidContext(), get()) }
-    single { LocalTorrServerManager(androidContext(), get(), get()) }
+    single { LocalTorrServerManager(androidContext(), get()) }
 }

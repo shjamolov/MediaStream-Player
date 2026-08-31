@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.net.URI
+import java.security.MessageDigest
 import java.util.Properties
 
 val localProperties = Properties().apply {
@@ -6,6 +8,34 @@ val localProperties = Properties().apply {
     if (file.exists()) file.inputStream().use(::load)
 }
 val tmdbApiToken = localProperties.getProperty("TMDB_API_TOKEN", "")
+val torrServerVersion = "MatriX.144.1"
+val torrServerBinaries = mapOf(
+    "arm64-v8a" to ("TorrServer-android-arm64" to "bb7e9b4d0dc894f8da3e32496e7487be93b8f8b04ada549396a7ab4dc85ea63b"),
+    "armeabi-v7a" to ("TorrServer-android-arm7" to "dd6c9dcfa11a450bff6ebaa8992b1823c32e3b9417657f93c8852271ded3949e"),
+    "x86_64" to ("TorrServer-android-amd64" to "58f3152471d01a86454b74f49029e62cdc2b3844451151d950cb40130a81ccb3"),
+)
+val generatedTorrServerDir = layout.buildDirectory.get().asFile.resolve("generated/torrserver/jniLibs")
+val prepareTorrServerBinaries = tasks.register("prepareTorrServerBinaries") {
+    notCompatibleWithConfigurationCache("Downloads and verifies external native binaries")
+    outputs.dir(generatedTorrServerDir)
+    doLast {
+        torrServerBinaries.forEach { (abi, binaryAndHash) ->
+            val (binary, expectedHash) = binaryAndHash
+            val output = generatedTorrServerDir.resolve("$abi/libtorrserver.so")
+            output.parentFile.mkdirs()
+            if (!output.exists() || output.inputStream().use { input ->
+                    MessageDigest.getInstance("SHA-256").digest(input.readBytes()).joinToString("") { "%02x".format(it) }
+                } != expectedHash) {
+                val url = "https://github.com/YouROK/TorrServer/releases/download/$torrServerVersion/$binary"
+                URI(url).toURL().openStream().use { input -> output.outputStream().use(input::copyTo) }
+            }
+            val actualHash = output.inputStream().use { input ->
+                MessageDigest.getInstance("SHA-256").digest(input.readBytes()).joinToString("") { "%02x".format(it) }
+            }
+            check(actualHash == expectedHash) { "Invalid SHA-256 for $binary" }
+        }
+    }
+}
 
 plugins {
     alias(libs.plugins.android.application)
@@ -30,6 +60,8 @@ android {
         buildConfigField("String", "TMDB_API_TOKEN", "\"${tmdbApiToken.replace("\"", "\\\"")}\"")
     }
 
+    sourceSets.getByName("main").jniLibs.srcDir(generatedTorrServerDir)
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -52,6 +84,13 @@ android {
 
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        jniLibs.useLegacyPackaging = true
+    }
+}
+
+tasks.configureEach {
+    if (name.startsWith("merge") && (name.endsWith("NativeLibs") || name.endsWith("JniLibFolders"))) {
+        dependsOn(prepareTorrServerBinaries)
     }
 }
 
