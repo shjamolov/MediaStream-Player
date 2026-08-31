@@ -76,6 +76,29 @@ class TvCatalogViewModelTest {
     }
 
     @Test
+    fun switchChannel_usesVisibleListAndWrapsAround() = runTest {
+        val catalog = catalog().let { current ->
+            current.copy(channels = listOf(
+                channel("uz-one", "UZ", setOf("movies")),
+                channel("uz-two", "UZ", setOf("movies")),
+                channel("ru-one", "RU", setOf("movies")),
+            ))
+        }
+        val viewModel = createViewModel(AppResult.Success(catalog), testScheduler)
+        advanceUntilIdle()
+
+        viewModel.openChannel(catalog.channels[0])
+        viewModel.switchChannel(1)
+        assertEquals("uz-two", viewModel.selectedChannel.value?.channel?.id?.value)
+
+        viewModel.switchChannel(1)
+        assertEquals("uz-one", viewModel.selectedChannel.value?.channel?.id?.value)
+
+        viewModel.switchChannel(-1)
+        assertEquals("uz-two", viewModel.selectedChannel.value?.channel?.id?.value)
+    }
+
+    @Test
     fun nowAndNext_returnsCurrentAndFollowingProgramme() {
         val channelId = ChannelId("example.uz")
         val entries = listOf(

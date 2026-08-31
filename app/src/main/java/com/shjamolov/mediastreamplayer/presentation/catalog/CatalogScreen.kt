@@ -97,7 +97,7 @@ fun CatalogScreen(
         )
         return
     }
-    Column(Modifier.fillMaxSize().background(AppBackground).padding(vertical = 28.dp)) {
+    Column(Modifier.fillMaxSize().background(AppBackground).verticalScroll(rememberScrollState()).padding(vertical = 28.dp)) {
         Row(Modifier.padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(if (searchMode) R.string.search else if (state.type == MediaType.MOVIE) R.string.movies else R.string.series),
@@ -121,16 +121,47 @@ fun CatalogScreen(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(stringResource(R.string.catalog_empty)) }
         } else {
             if (!searchMode) FeaturedMedia(state.items.first(), viewModel::open)
-            Text(
-                text = if (searchMode) "Результаты" else "Популярное сейчас",
-                modifier = Modifier.padding(start = 48.dp, top = 18.dp),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
-            ) { items(state.items, key = { "${it.type}-${it.id.value}" }) { MediaCard(it, viewModel::open) } }
+            if (searchMode) {
+                MediaRow("Результаты", state.items, viewModel::open)
+            } else {
+                MediaRow("Сейчас смотрят", state.items, viewModel::open)
+                val topRated = state.items.sortedByDescending { it.voteAverage ?: 0.0 }.take(10)
+                MediaRow("Топ-10 для вас", topRated, viewModel::open, numbered = true)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MediaRow(
+    title: String,
+    media: List<CatalogItem>,
+    onClick: (CatalogItem) -> Unit,
+    numbered: Boolean = false,
+) {
+    Text(
+        text = title,
+        modifier = Modifier.padding(start = 48.dp, top = 18.dp),
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.Bold,
+    )
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
+        items(media.size, key = { index -> "row-$title-${media[index].type}-${media[index].id.value}" }) { index ->
+            Box {
+                MediaCard(media[index], onClick)
+                if (numbered) {
+                    Text(
+                        text = "${index + 1}",
+                        modifier = Modifier.align(Alignment.BottomStart).background(Color(0xE6FF6B00), RoundedCornerShape(topEnd = 12.dp)).padding(horizontal = 12.dp, vertical = 5.dp),
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Black,
+                    )
+                }
+            }
         }
     }
 }
@@ -150,6 +181,7 @@ private fun FeaturedMedia(item: CatalogItem, onClick: (CatalogItem) -> Unit) {
             ),
         )
         Column(Modifier.fillMaxHeight().width(570.dp).padding(start = 48.dp, top = 34.dp, bottom = 28.dp), verticalArrangement = Arrangement.Center) {
+            Text("ВЫБОР РЕДАКЦИИ", color = Color(0xFFFF6B00), fontWeight = FontWeight.Bold)
             Text(item.title, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black, maxLines = 2)
             Text(
                 listOfNotNull(item.releaseDate?.take(4), item.voteAverage?.let { "★ %.1f".format(it) }).joinToString("  •  "),
@@ -157,7 +189,10 @@ private fun FeaturedMedia(item: CatalogItem, onClick: (CatalogItem) -> Unit) {
                 modifier = Modifier.padding(top = 8.dp),
             )
             Text(item.overview.orEmpty(), maxLines = 3, overflow = TextOverflow.Ellipsis, color = AppTextSecondary, modifier = Modifier.padding(vertical = 12.dp))
-            Button(onClick = { onClick(item) }) { Text("Подробнее") }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = { onClick(item) }) { Text("▶ Смотреть") }
+                Text("Подробнее о фильме", color = AppTextSecondary, modifier = Modifier.padding(top = 12.dp))
+            }
         }
     }
 }

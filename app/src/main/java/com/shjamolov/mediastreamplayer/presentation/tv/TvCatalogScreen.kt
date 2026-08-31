@@ -157,9 +157,9 @@ private fun FilterRows(
             .filter { it.code in codes }
             .sortedBy { SUPPORTED_COUNTRY_ORDER.indexOf(it.code) }
     }
-    val availableCategories = remember(catalog) {
+    val availableCategoryIds = remember(catalog) {
         val ids = catalog.channels.flatMap { it.channel.categoryIds }.toSet()
-        catalog.categories.filter { it.id in ids }.sortedBy { it.name }
+        TV_CATEGORY_FILTERS.filter { it.id in ids }
     }
 
     Text(
@@ -197,10 +197,10 @@ private fun FilterRows(
         contentPadding = PaddingValues(horizontal = 42.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        items(availableCategories, key = { it.id }) { category ->
+        items(availableCategoryIds, key = { it.id }) { category ->
             val filter = TvCatalogFilter.Category(category.id)
             FilterButton(
-                label = category.name,
+                label = category.label,
                 selected = selectedFilter == filter,
                 onClick = { onFilterSelected(filter) },
             )
@@ -307,3 +307,13 @@ private fun streamSummary(item: TvChannelStreams): String {
 }
 
 private val SUPPORTED_COUNTRY_ORDER = listOf("UZ", "RU", "KZ")
+
+private data class TvCategoryButton(val id: String, val label: String)
+
+private val TV_CATEGORY_FILTERS = listOf(
+    TvCategoryButton("movies", "Кино"),
+    TvCategoryButton("music", "Музыка"),
+    TvCategoryButton("sports", "Спорт"),
+    TvCategoryButton("entertainment", "Развлечения"),
+    TvCategoryButton("kids", "Детские"),
+)

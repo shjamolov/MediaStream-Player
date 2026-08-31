@@ -79,7 +79,13 @@ class MainActivity : ComponentActivity() {
 
                 when {
                     torrentPlayback != null -> TorrentPlayerScreen(checkNotNull(torrentPlayback), torrentPlaybackViewModel::closePlayer)
-                    selectedChannel != null -> TvPlayerScreen(checkNotNull(selectedChannel), guideState, tvCatalogViewModel::closePlayer)
+                    selectedChannel != null -> TvPlayerScreen(
+                        channel = checkNotNull(selectedChannel),
+                        guideState = guideState,
+                        onPreviousChannel = { tvCatalogViewModel.switchChannel(-1) },
+                        onNextChannel = { tvCatalogViewModel.switchChannel(1) },
+                        onBack = tvCatalogViewModel::closePlayer,
+                    )
                     else -> AppShell(section, onSectionSelected = { selected ->
                         section = selected
                         when (selected) {

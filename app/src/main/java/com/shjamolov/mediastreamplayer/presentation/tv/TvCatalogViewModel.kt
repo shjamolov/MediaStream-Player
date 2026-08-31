@@ -75,6 +75,16 @@ class TvCatalogViewModel(
         }
     }
 
+    fun switchChannel(offset: Int) {
+        val current = mutableSelectedChannel.value ?: return
+        val channels = (mutableState.value as? TvCatalogUiState.Content)?.visibleChannels.orEmpty()
+        if (channels.size < 2) return
+        val currentIndex = channels.indexOfFirst { it.channel.id == current.channel.id }
+        if (currentIndex == -1) return
+        val nextIndex = (currentIndex + offset).mod(channels.size)
+        openChannel(channels[nextIndex])
+    }
+
     fun closePlayer() {
         guideJob?.cancel()
         mutableSelectedChannel.value = null

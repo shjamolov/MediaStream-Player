@@ -20,6 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -40,6 +45,8 @@ import java.util.Date
 fun TvPlayerScreen(
     channel: TvChannelStreams,
     guideState: TvGuideUiState,
+    onPreviousChannel: () -> Unit,
+    onNextChannel: () -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -68,7 +75,14 @@ fun TvPlayerScreen(
                     }
                 },
                 update = { it.player = controller.player },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().onPreviewKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    when (event.key) {
+                        Key.DirectionUp -> { onPreviousChannel(); true }
+                        Key.DirectionDown -> { onNextChannel(); true }
+                        else -> false
+                    }
+                },
             )
 
             PlayerHeader(
@@ -76,6 +90,12 @@ fun TvPlayerScreen(
                 state = state,
                 guideState = guideState,
                 modifier = Modifier.align(Alignment.TopStart),
+            )
+
+            Text(
+                text = "↑ предыдущий канал   •   ↓ следующий канал",
+                modifier = Modifier.align(Alignment.BottomCenter).background(Color(0x99000000)).padding(horizontal = 22.dp, vertical = 10.dp),
+                color = Color(0xFFB7C9D6),
             )
 
             val failedState = state as? PlaybackUiState.Failed
