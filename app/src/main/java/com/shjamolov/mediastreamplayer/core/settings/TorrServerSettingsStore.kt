@@ -15,12 +15,17 @@ class TorrServerSettingsStore(
     private val preferences = context.getSharedPreferences("torrserver_settings", Context.MODE_PRIVATE)
 
     fun load(): TorrServerEndpoint {
-        val mode = runCatching { TorrServerMode.valueOf(preferences.getString(KEY_MODE, null).orEmpty()) }
-            .getOrDefault(TorrServerMode.LOCAL_EXTERNAL)
+        val storedMode = runCatching { TorrServerMode.valueOf(preferences.getString(KEY_MODE, null).orEmpty()) }
+            .getOrDefault(TorrServerMode.LOCAL_MANAGED)
+        val storedUrl = preferences.getString(KEY_URL, null)
+        val mode = if (storedMode == TorrServerMode.LOCAL_EXTERNAL &&
+            (storedUrl == null || storedUrl.trimEnd('/') == "http://127.0.0.1:8090")) {
+            TorrServerMode.LOCAL_MANAGED
+        } else storedMode
         val defaultUrl = if (mode == TorrServerMode.REMOTE) "http://192.168.1.2:8090" else "http://127.0.0.1:8090"
         val username = preferences.getString(KEY_USERNAME, null)?.takeIf(String::isNotBlank)
         val password = username?.let { readPassword() }
-        return TorrServerEndpoint(mode, preferences.getString(KEY_URL, defaultUrl) ?: defaultUrl,
+        return TorrServerEndpoint(mode, storedUrl ?: defaultUrl,
             username = username?.takeIf { password != null }, password = password)
     }
 

@@ -3,6 +3,8 @@ package com.shjamolov.mediastreamplayer.presentation.torrserver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shjamolov.mediastreamplayer.core.settings.TorrServerSettingsStore
+import com.shjamolov.mediastreamplayer.core.torrserver.LocalTorrServerManager
+import com.shjamolov.mediastreamplayer.core.torrserver.LocalTorrServerState
 import com.shjamolov.mediastreamplayer.domain.common.AppResult
 import com.shjamolov.mediastreamplayer.domain.model.TorrServerEndpoint
 import com.shjamolov.mediastreamplayer.domain.model.TorrServerMode
@@ -16,12 +18,14 @@ import kotlinx.coroutines.launch
 class TorrServerViewModel(
     private val repository: TorrServerRepository,
     private val store: TorrServerSettingsStore,
+    private val localManager: LocalTorrServerManager,
 ) : ViewModel() {
     private val saved = store.load()
     private val mutableState = MutableStateFlow(
         TorrServerUiState(saved.mode, saved.baseUrl, saved.username.orEmpty(), saved.password.orEmpty()),
     )
     val state: StateFlow<TorrServerUiState> = mutableState.asStateFlow()
+    val localServerState: StateFlow<LocalTorrServerState> = localManager.state
 
     fun setMode(mode: TorrServerMode) = mutableState.update {
         val url = when (mode) {
@@ -45,6 +49,7 @@ class TorrServerViewModel(
         val endpoint = validatedEndpoint() ?: return
         mutableState.update { it.copy(testing = true, result = null, url = endpoint.baseUrl) }
         viewModelScope.launch {
+            if (endpoint.mode == TorrServerMode.LOCAL_MANAGED) localManager.ensureRunning()
             when (val response = repository.testConnection(endpoint)) {
                 is AppResult.Success -> {
                     store.save(endpoint)

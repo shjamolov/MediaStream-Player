@@ -14,6 +14,6 @@ val presentationModule = module {
     viewModel { CatalogViewModel(get()) }
     viewModel { ParentalControlViewModel(get(), get()) }
     viewModel { SettingsViewModel(get(), get()) }
-    viewModel { TorrServerViewModel(get(), get()) }
-    viewModel { TorrentPlaybackViewModel(get(), get()) }
+    viewModel { TorrServerViewModel(get(), get(), get()) }
+    viewModel { TorrentPlaybackViewModel(get(), get(), get()) }
 }

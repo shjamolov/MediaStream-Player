@@ -3,11 +3,14 @@ package com.shjamolov.mediastreamplayer.presentation.torrent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shjamolov.mediastreamplayer.core.settings.TorrServerSettingsStore
+import com.shjamolov.mediastreamplayer.core.torrserver.LocalTorrServerManager
+import com.shjamolov.mediastreamplayer.core.torrserver.LocalTorrServerState
 import com.shjamolov.mediastreamplayer.domain.common.AppResult
 import com.shjamolov.mediastreamplayer.domain.model.TorrentContent
 import com.shjamolov.mediastreamplayer.domain.model.TorrentPlaybackSource
 import com.shjamolov.mediastreamplayer.domain.model.TorrentVideoFile
 import com.shjamolov.mediastreamplayer.domain.model.TorrentSearchResult
+import com.shjamolov.mediastreamplayer.domain.model.TorrServerMode
 import com.shjamolov.mediastreamplayer.domain.repository.TorrServerRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +21,7 @@ import kotlinx.coroutines.launch
 class TorrentPlaybackViewModel(
     private val repository: TorrServerRepository,
     private val settings: TorrServerSettingsStore,
+    private val localManager: LocalTorrServerManager,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(TorrentSourceUiState())
     val state: StateFlow<TorrentSourceUiState> = mutableState.asStateFlow()
@@ -47,6 +51,10 @@ class TorrentPlaybackViewModel(
         mutableState.update { it.copy(searching = true, searchError = false, searchResults = emptyList()) }
         viewModelScope.launch {
             val endpoint = settings.load()
+            if (endpoint.mode == TorrServerMode.LOCAL_MANAGED && localManager.ensureRunning() !is LocalTorrServerState.Running) {
+                mutableState.update { it.copy(searching = false, searchError = true) }
+                return@launch
+            }
             when (val result = repository.search(endpoint, query.trim())) {
                 is AppResult.Success -> {
                     val imdbId = mutableState.value.imdbId
@@ -77,7 +85,12 @@ class TorrentPlaybackViewModel(
         }
         mutableState.update { it.copy(loading = true, error = null, content = null) }
         viewModelScope.launch {
-            when (val result = repository.addTorrent(settings.load(), link, current.title, current.poster)) {
+            val endpoint = settings.load()
+            if (endpoint.mode == TorrServerMode.LOCAL_MANAGED && localManager.ensureRunning() !is LocalTorrServerState.Running) {
+                mutableState.update { it.copy(loading = false, error = TorrentSourceError.LOAD_FAILED) }
+                return@launch
+            }
+            when (val result = repository.addTorrent(endpoint, link, current.title, current.poster)) {
                 is AppResult.Success -> mutableState.update { it.copy(loading = false, content = result.value) }
                 is AppResult.Failure -> mutableState.update { it.copy(loading = false, error = TorrentSourceError.LOAD_FAILED) }
             }

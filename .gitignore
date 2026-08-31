@@ -1,6 +1,7 @@
 *.iml
 .gradle/
 .gradle-user-home/
+.android-user-home/
 .idea/
 local.properties
 build/

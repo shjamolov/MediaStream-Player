@@ -118,4 +118,12 @@
     <string name="torrserver_invalid_url">Некорректный адрес TorrServer.</string>
     <string name="torrserver_invalid_credentials">Логин и пароль нужно заполнить вместе.</string>
     <string name="torrserver_password_security">Пароль шифруется ключом Android Keystore и не записывается открытым текстом.</string>
+    <string name="local_server_channel">Локальное воспроизведение</string>
+    <string name="local_server_notification">Локальный сервер воспроизведения работает</string>
+    <string name="torrserver_managed">Встроенный</string>
+    <string name="local_server_downloading">Подготовка сервера: %1$d%%</string>
+    <string name="local_server_starting">Запускаем встроенный сервер…</string>
+    <string name="local_server_running">Встроенный сервер готов: %1$s</string>
+    <string name="local_server_failed">Не удалось запустить встроенный сервер: %1$s</string>
+    <string name="local_server_stopped">Встроенный сервер ещё не запущен.</string>
 </resources>

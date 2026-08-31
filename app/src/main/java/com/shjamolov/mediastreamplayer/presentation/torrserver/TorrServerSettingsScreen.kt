@@ -27,24 +27,41 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.shjamolov.mediastreamplayer.R
 import com.shjamolov.mediastreamplayer.domain.model.TorrServerMode
+import com.shjamolov.mediastreamplayer.core.torrserver.LocalTorrServerState
 
 @Composable
 fun TorrServerSettingsScreen(viewModel: TorrServerViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val localState by viewModel.localServerState.collectAsStateWithLifecycle()
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 64.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text("TorrServer", style = MaterialTheme.typography.headlineMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            listOf(TorrServerMode.LOCAL_EXTERNAL, TorrServerMode.REMOTE).forEach { mode ->
+            listOf(TorrServerMode.LOCAL_MANAGED, TorrServerMode.LOCAL_EXTERNAL, TorrServerMode.REMOTE).forEach { mode ->
                 Button(onClick = { viewModel.setMode(mode) }) {
-                    val label = stringResource(if (mode == TorrServerMode.LOCAL_EXTERNAL) R.string.torrserver_local else R.string.torrserver_remote)
+                    val label = stringResource(when (mode) {
+                        TorrServerMode.LOCAL_MANAGED -> R.string.torrserver_managed
+                        TorrServerMode.LOCAL_EXTERNAL -> R.string.torrserver_local
+                        TorrServerMode.REMOTE -> R.string.torrserver_remote
+                    })
                     Text(if (state.mode == mode) "✓ $label" else label)
                 }
             }
         }
-        SettingField(state.url, viewModel::setUrl, stringResource(R.string.torrserver_url))
+        if (state.mode == TorrServerMode.LOCAL_MANAGED) {
+            val (serverText, serverOk) = when (val status = localState) {
+                LocalTorrServerState.Stopped -> stringResource(R.string.local_server_stopped) to false
+                is LocalTorrServerState.Downloading -> stringResource(R.string.local_server_downloading, status.percent) to true
+                LocalTorrServerState.Starting -> stringResource(R.string.local_server_starting) to true
+                is LocalTorrServerState.Running -> stringResource(R.string.local_server_running, status.version) to true
+                is LocalTorrServerState.Failed -> stringResource(R.string.local_server_failed, status.message) to false
+            }
+            Text(serverText, color = if (serverOk) Color(0xFF76E39A) else Color(0xFFFFA5A5))
+        } else {
+            SettingField(state.url, viewModel::setUrl, stringResource(R.string.torrserver_url))
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(onClick = viewModel::save, enabled = !state.testing) {
                 Text(stringResource(R.string.save))
@@ -66,10 +83,12 @@ fun TorrServerSettingsScreen(viewModel: TorrServerViewModel) {
             }
             Text(text, color = if (ok) Color(0xFF76E39A) else Color(0xFFFFA5A5))
         }
-        Text(stringResource(R.string.torrserver_emulator_hint), color = Color(0xFF9CB3C5))
-        SettingField(state.username, viewModel::setUsername, stringResource(R.string.torrserver_username))
-        SettingField(state.password, viewModel::setPassword, stringResource(R.string.torrserver_password), password = true)
-        Text(stringResource(R.string.torrserver_password_security), color = Color(0xFF9CB3C5))
+        if (state.mode != TorrServerMode.LOCAL_MANAGED) {
+            Text(stringResource(R.string.torrserver_emulator_hint), color = Color(0xFF9CB3C5))
+            SettingField(state.username, viewModel::setUsername, stringResource(R.string.torrserver_username))
+            SettingField(state.password, viewModel::setPassword, stringResource(R.string.torrserver_password), password = true)
+            Text(stringResource(R.string.torrserver_password_security), color = Color(0xFF9CB3C5))
+        }
     }
 }
 
