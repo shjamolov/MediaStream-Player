@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface CatalogRepository {
     suspend fun popular(type: MediaType): AppResult<CatalogPage>
+    suspend fun discover(type: MediaType, genreId: Int): AppResult<CatalogPage>
     suspend fun search(query: String): AppResult<CatalogPage>
     suspend fun details(id: TmdbId, type: MediaType): AppResult<CatalogDetails>
     suspend fun seasonEpisodes(seriesId: TmdbId, seasonNumber: Int): AppResult<List<CatalogEpisode>>

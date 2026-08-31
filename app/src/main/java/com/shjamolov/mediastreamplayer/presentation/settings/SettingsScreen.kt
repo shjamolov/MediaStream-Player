@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -42,14 +43,29 @@ fun SettingsScreen(
     BoxWithConstraints(Modifier.fillMaxSize()) {
     val compact = maxWidth < 600.dp
     Column(Modifier.fillMaxSize()) {
-        LazyRow(
-            modifier = Modifier.padding(vertical = 12.dp),
-            contentPadding = PaddingValues(horizontal = if (compact) 16.dp else 48.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            items(SettingsPage.entries) { item ->
-                Button(onClick = { page = item }) {
-                    Text(if (page == item) "✓ ${stringResource(item.title)}" else stringResource(item.title))
+        if (compact) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                SettingsPage.entries.chunked(2).forEach { pages ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        pages.forEach { item ->
+                            Button(onClick = { page = item }, modifier = Modifier.weight(1f)) {
+                                Text(if (page == item) "✓ ${stringResource(item.title)}" else stringResource(item.title))
+                            }
+                        }
+                        if (pages.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
+            }
+        } else {
+            LazyRow(
+                modifier = Modifier.padding(vertical = 12.dp),
+                contentPadding = PaddingValues(horizontal = 48.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                items(SettingsPage.entries) { item ->
+                    Button(onClick = { page = item }) {
+                        Text(if (page == item) "✓ ${stringResource(item.title)}" else stringResource(item.title))
+                    }
                 }
             }
         }

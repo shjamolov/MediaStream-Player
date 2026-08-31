@@ -10,10 +10,33 @@ import retrofit2.http.Query
 
 interface TmdbApi {
     @GET("3/movie/popular")
-    suspend fun popularMovies(@Query("language") language: String = "ru-RU"): TmdbPageDto
+    suspend fun popularMovies(
+        @Query("language") language: String = "ru-RU",
+        @Query("page") page: Int = 1,
+    ): TmdbPageDto
 
     @GET("3/tv/popular")
-    suspend fun popularSeries(@Query("language") language: String = "ru-RU"): TmdbPageDto
+    suspend fun popularSeries(
+        @Query("language") language: String = "ru-RU",
+        @Query("page") page: Int = 1,
+    ): TmdbPageDto
+
+    @GET("3/discover/movie")
+    suspend fun discoverMovies(
+        @Query("with_genres") genreId: Int,
+        @Query("language") language: String = "ru-RU",
+        @Query("sort_by") sortBy: String = "popularity.desc",
+        @Query("include_adult") includeAdult: Boolean = false,
+        @Query("page") page: Int = 1,
+    ): TmdbPageDto
+
+    @GET("3/discover/tv")
+    suspend fun discoverSeries(
+        @Query("with_genres") genreId: Int,
+        @Query("language") language: String = "ru-RU",
+        @Query("sort_by") sortBy: String = "popularity.desc",
+        @Query("page") page: Int = 1,
+    ): TmdbPageDto
 
     @GET("3/search/multi")
     suspend fun search(

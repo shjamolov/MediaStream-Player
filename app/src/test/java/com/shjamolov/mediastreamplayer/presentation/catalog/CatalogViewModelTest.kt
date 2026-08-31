@@ -47,11 +47,25 @@ class CatalogViewModelTest {
         advanceUntilIdle()
         assertEquals(movie, viewModel.state.value.selected?.item)
     }
+
+    @Test
+    fun selectGenre_loadsCategoryAndUpdatesSelection() = runTest(dispatcher) {
+        val viewModel = CatalogViewModel(FakeCatalogRepository(movie))
+        advanceUntilIdle()
+        val genre = CatalogGenre(28, "Боевики")
+
+        viewModel.selectGenre(genre)
+        advanceUntilIdle()
+
+        assertEquals(genre, viewModel.state.value.selectedGenre)
+        assertEquals(listOf(movie), viewModel.state.value.items)
+    }
 }
 
 private class FakeCatalogRepository(private val item: CatalogItem) : CatalogRepository {
     private val favorite = MutableStateFlow(false)
     override suspend fun popular(type: MediaType) = AppResult.Success(CatalogPage(listOf(item), false))
+    override suspend fun discover(type: MediaType, genreId: Int) = AppResult.Success(CatalogPage(listOf(item), false))
     override suspend fun search(query: String) = AppResult.Success(CatalogPage(listOf(item), false))
     override suspend fun details(id: TmdbId, type: MediaType) = AppResult.Success(CatalogDetails(item))
     override suspend fun seasonEpisodes(seriesId: TmdbId, seasonNumber: Int): AppResult<List<CatalogEpisode>> =

@@ -34,16 +34,33 @@ class TmdbCatalogRepository(
     override suspend fun popular(type: MediaType): AppResult<CatalogPage> {
         if (token.isBlank()) return AppResult.Failure(AppError.Configuration("TMDB_API_TOKEN is missing"))
         return try {
-            val remote = when (type) {
-                MediaType.MOVIE -> api.popularMovies(settings.language.value.apiCode).results.mapNotNull { it.toDomain(MediaType.MOVIE) }
-                MediaType.SERIES -> api.popularSeries(settings.language.value.apiCode).results.mapNotNull { it.toDomain(MediaType.SERIES) }
-            }
+            val remote = (1..POPULAR_PAGE_COUNT).flatMap { page ->
+                when (type) {
+                    MediaType.MOVIE -> api.popularMovies(settings.language.value.apiCode, page).results.mapNotNull { it.toDomain(MediaType.MOVIE) }
+                    MediaType.SERIES -> api.popularSeries(settings.language.value.apiCode, page).results.mapNotNull { it.toDomain(MediaType.SERIES) }
+                }
+            }.distinctBy { it.id }
             cache.upsertAll(remote.map { it.toCache() })
             AppResult.Success(CatalogPage(remote, fromCache = false))
         } catch (error: Exception) {
             val cached = cache.getByType(type.name).map { it.toDomain() }
             if (cached.isNotEmpty()) AppResult.Success(CatalogPage(cached, fromCache = true))
             else AppResult.Failure(if (error is IOException) AppError.Network(error) else AppError.Unexpected(error))
+        }
+    }
+
+    override suspend fun discover(type: MediaType, genreId: Int): AppResult<CatalogPage> {
+        if (token.isBlank()) return AppResult.Failure(AppError.Configuration("TMDB_API_TOKEN is missing"))
+        return try {
+            val items = (1..DISCOVER_PAGE_COUNT).flatMap { page ->
+                when (type) {
+                    MediaType.MOVIE -> api.discoverMovies(genreId, settings.language.value.apiCode, page = page).results.mapNotNull { it.toDomain(type) }
+                    MediaType.SERIES -> api.discoverSeries(genreId, settings.language.value.apiCode, page = page).results.mapNotNull { it.toDomain(type) }
+                }
+            }.distinctBy { it.id }
+            AppResult.Success(CatalogPage(items, fromCache = false))
+        } catch (error: Exception) {
+            AppResult.Failure(if (error is IOException) AppError.Network(error) else AppError.Unexpected(error))
         }
     }
 
@@ -165,3 +182,6 @@ private fun CatalogItem.toFavorite() = FavoriteMediaEntity(id.value, type.name, 
 
 private fun FavoriteMediaEntity.toDomain() = CatalogItem(TmdbId(tmdbId), MediaType.valueOf(mediaType),
     title, posterPath = posterPath)
+
+private const val POPULAR_PAGE_COUNT = 3
+private const val DISCOVER_PAGE_COUNT = 2

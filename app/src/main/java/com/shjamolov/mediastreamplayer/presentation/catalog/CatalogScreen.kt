@@ -122,6 +122,7 @@ fun CatalogScreen(
         } else if (state.items.isEmpty() && state.error == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(stringResource(R.string.catalog_empty)) }
         } else {
+            if (!searchMode) GenreRow(state.type, state.selectedGenre, viewModel::selectGenre)
             if (!searchMode) FeaturedMedia(state.items.first(), viewModel::open)
             if (searchMode) {
                 MediaRow("Результаты", state.items, viewModel::open)
@@ -131,6 +132,33 @@ fun CatalogScreen(
                 MediaRow("Топ-10 для вас", topRated, viewModel::open, numbered = true)
             }
         }
+    }
+}
+
+@Composable
+private fun GenreRow(type: MediaType, selected: CatalogGenre?, onSelected: (CatalogGenre?) -> Unit) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        item { GenreButton("Все", selected == null) { onSelected(null) } }
+        items(genresFor(type), key = { it.id }) { genre ->
+            GenreButton(genre.label, selected?.id == genre.id) { onSelected(genre) }
+        }
+    }
+}
+
+@Composable
+private fun GenreButton(label: String, selected: Boolean, onClick: () -> Unit) {
+    var focused by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(20.dp)
+    Box(
+        Modifier.onFocusChanged { focused = it.hasFocus }
+            .border(if (focused) 2.dp else 1.dp, if (focused) Color.White else if (selected) Color(0xFFFF6B00) else Color(0xFF355064), shape)
+            .clip(shape).background(if (selected) Color(0xFFFF6B00) else AppSurface)
+            .clickable(onClick = onClick).focusable().padding(horizontal = 18.dp, vertical = 10.dp),
+    ) {
+        Text(label, color = Color.White, fontWeight = FontWeight.SemiBold)
     }
 }
 

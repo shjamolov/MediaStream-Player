@@ -26,9 +26,23 @@ class CatalogViewModel(private val repository: CatalogRepository) : ViewModel() 
     init { load(MediaType.MOVIE) }
 
     fun load(type: MediaType) {
-        _state.update { it.copy(type = type, loading = true, error = null, selected = null) }
+        _state.update { it.copy(type = type, loading = true, error = null, selected = null, selectedGenre = null) }
         viewModelScope.launch {
             when (val result = repository.popular(type)) {
+                is AppResult.Success -> _state.update {
+                    it.copy(items = result.value.items, loading = false, fromCache = result.value.fromCache)
+                }
+                is AppResult.Failure -> _state.update { it.copy(loading = false, error = result.error.toUiError()) }
+            }
+        }
+    }
+
+    fun selectGenre(genre: CatalogGenre?) {
+        val type = _state.value.type
+        _state.update { it.copy(selectedGenre = genre, loading = true, error = null, selected = null) }
+        viewModelScope.launch {
+            val result = if (genre == null) repository.popular(type) else repository.discover(type, genre.id)
+            when (result) {
                 is AppResult.Success -> _state.update {
                     it.copy(items = result.value.items, loading = false, fromCache = result.value.fromCache)
                 }
@@ -120,7 +134,25 @@ data class CatalogUiState(
     val selectedSeason: Int? = null,
     val episodes: List<CatalogEpisode> = emptyList(),
     val loadingEpisodes: Boolean = false,
+    val selectedGenre: CatalogGenre? = null,
 )
+
+data class CatalogGenre(val id: Int, val label: String)
+
+internal fun genresFor(type: MediaType): List<CatalogGenre> = when (type) {
+    MediaType.MOVIE -> listOf(
+        CatalogGenre(28, "Боевики"), CatalogGenre(35, "Комедии"), CatalogGenre(18, "Драмы"),
+        CatalogGenre(80, "Криминал"), CatalogGenre(14, "Фэнтези"), CatalogGenre(878, "Фантастика"),
+        CatalogGenre(27, "Ужасы"), CatalogGenre(10751, "Семейные"), CatalogGenre(16, "Анимация"),
+        CatalogGenre(99, "Документальные"),
+    )
+    MediaType.SERIES -> listOf(
+        CatalogGenre(10759, "Приключения"), CatalogGenre(35, "Комедии"), CatalogGenre(18, "Драмы"),
+        CatalogGenre(80, "Криминал"), CatalogGenre(10765, "Фантастика"), CatalogGenre(9648, "Детективы"),
+        CatalogGenre(10751, "Семейные"), CatalogGenre(10762, "Детские"), CatalogGenre(16, "Анимация"),
+        CatalogGenre(99, "Документальные"),
+    )
+}
 
 enum class CatalogError { CONFIGURATION, NETWORK, UNKNOWN }
 
