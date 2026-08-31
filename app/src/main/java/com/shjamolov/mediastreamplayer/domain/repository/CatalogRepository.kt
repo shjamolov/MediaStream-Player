@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface CatalogRepository {
     suspend fun popular(type: MediaType): AppResult<CatalogPage>
+    suspend fun home(type: MediaType): AppResult<List<CatalogShelf>>
     suspend fun discover(type: MediaType, genreId: Int): AppResult<CatalogPage>
     suspend fun search(query: String): AppResult<CatalogPage>
     suspend fun details(id: TmdbId, type: MediaType): AppResult<CatalogDetails>
@@ -20,3 +21,5 @@ interface CatalogRepository {
 }
 
 data class CatalogPage(val items: List<CatalogItem>, val fromCache: Boolean)
+
+data class CatalogShelf(val id: String, val title: String, val items: List<CatalogItem>)

@@ -20,6 +20,7 @@ import com.shjamolov.mediastreamplayer.domain.model.MediaType
 import com.shjamolov.mediastreamplayer.domain.model.TmdbId
 import com.shjamolov.mediastreamplayer.domain.repository.CatalogPage
 import com.shjamolov.mediastreamplayer.domain.repository.CatalogRepository
+import com.shjamolov.mediastreamplayer.domain.repository.CatalogShelf
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.io.IOException
@@ -46,6 +47,37 @@ class TmdbCatalogRepository(
             val cached = cache.getByType(type.name).map { it.toDomain() }
             if (cached.isNotEmpty()) AppResult.Success(CatalogPage(cached, fromCache = true))
             else AppResult.Failure(if (error is IOException) AppError.Network(error) else AppError.Unexpected(error))
+        }
+    }
+
+    override suspend fun home(type: MediaType): AppResult<List<CatalogShelf>> {
+        if (token.isBlank()) return AppResult.Failure(AppError.Configuration("TMDB_API_TOKEN is missing"))
+        return try {
+            val language = settings.language.value.apiCode
+            val shelves = when (type) {
+                MediaType.MOVIE -> listOf(
+                    CatalogShelf("trending", "Тренды недели", api.trending("movie", language).toItems(type)),
+                    CatalogShelf("now_playing", "Сейчас в кино", api.nowPlayingMovies(language).toItems(type)),
+                    CatalogShelf("upcoming", "Скоро", api.upcomingMovies(language).toItems(type)),
+                    CatalogShelf("top_rated", "Лучшее по рейтингу", api.topRatedMovies(language).toItems(type)),
+                )
+                MediaType.SERIES -> listOf(
+                    CatalogShelf("trending", "Тренды недели", api.trending("tv", language).toItems(type)),
+                    CatalogShelf("on_the_air", "Сейчас в эфире", api.onTheAirSeries(language).toItems(type)),
+                    CatalogShelf("airing_today", "Новые серии сегодня", api.airingTodaySeries(language).toItems(type)),
+                    CatalogShelf("top_rated", "Лучшие сериалы", api.topRatedSeries(language).toItems(type)),
+                )
+            }.filter { it.items.isNotEmpty() }
+            val allItems = shelves.flatMap(CatalogShelf::items).distinctBy { it.id }
+            cache.upsertAll(allItems.map { it.toCache() })
+            AppResult.Success(shelves)
+        } catch (error: Exception) {
+            val cached = cache.getByType(type.name).map { it.toDomain() }
+            if (cached.isNotEmpty()) {
+                AppResult.Success(listOf(CatalogShelf("offline", "Сохранённый каталог", cached)))
+            } else {
+                AppResult.Failure(if (error is IOException) AppError.Network(error) else AppError.Unexpected(error))
+            }
         }
     }
 
@@ -131,6 +163,9 @@ private fun TmdbMediaDto.toDomain(type: MediaType): CatalogItem? {
     return CatalogItem(TmdbId(id), type, displayTitle, originalTitle ?: originalName, overview,
         posterPath, backdropPath, releaseDate ?: firstAirDate, voteAverage?.coerceIn(0.0, 10.0))
 }
+
+private fun com.shjamolov.mediastreamplayer.data.remote.tmdb.dto.TmdbPageDto.toItems(type: MediaType) =
+    results.mapNotNull { it.toDomain(type) }.distinctBy { it.id }
 
 private fun TmdbDetailsDto.toDomain(
     type: MediaType,

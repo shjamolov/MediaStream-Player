@@ -9,6 +9,12 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface TmdbApi {
+    @GET("3/trending/{mediaType}/week")
+    suspend fun trending(
+        @Path("mediaType") mediaType: String,
+        @Query("language") language: String = "ru-RU",
+    ): TmdbPageDto
+
     @GET("3/movie/popular")
     suspend fun popularMovies(
         @Query("language") language: String = "ru-RU",
@@ -20,6 +26,24 @@ interface TmdbApi {
         @Query("language") language: String = "ru-RU",
         @Query("page") page: Int = 1,
     ): TmdbPageDto
+
+    @GET("3/movie/now_playing")
+    suspend fun nowPlayingMovies(@Query("language") language: String = "ru-RU"): TmdbPageDto
+
+    @GET("3/movie/upcoming")
+    suspend fun upcomingMovies(@Query("language") language: String = "ru-RU"): TmdbPageDto
+
+    @GET("3/movie/top_rated")
+    suspend fun topRatedMovies(@Query("language") language: String = "ru-RU"): TmdbPageDto
+
+    @GET("3/tv/on_the_air")
+    suspend fun onTheAirSeries(@Query("language") language: String = "ru-RU"): TmdbPageDto
+
+    @GET("3/tv/airing_today")
+    suspend fun airingTodaySeries(@Query("language") language: String = "ru-RU"): TmdbPageDto
+
+    @GET("3/tv/top_rated")
+    suspend fun topRatedSeries(@Query("language") language: String = "ru-RU"): TmdbPageDto
 
     @GET("3/discover/movie")
     suspend fun discoverMovies(

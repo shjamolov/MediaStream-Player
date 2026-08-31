@@ -9,6 +9,7 @@ import com.shjamolov.mediastreamplayer.domain.model.CatalogItem
 import com.shjamolov.mediastreamplayer.domain.model.MediaType
 import com.shjamolov.mediastreamplayer.domain.model.CatalogEpisode
 import com.shjamolov.mediastreamplayer.domain.repository.CatalogRepository
+import com.shjamolov.mediastreamplayer.domain.repository.CatalogShelf
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,9 +29,10 @@ class CatalogViewModel(private val repository: CatalogRepository) : ViewModel() 
     fun load(type: MediaType) {
         _state.update { it.copy(type = type, loading = true, error = null, selected = null, selectedGenre = null) }
         viewModelScope.launch {
-            when (val result = repository.popular(type)) {
+            when (val result = repository.home(type)) {
                 is AppResult.Success -> _state.update {
-                    it.copy(items = result.value.items, loading = false, fromCache = result.value.fromCache)
+                    val items = result.value.flatMap(CatalogShelf::items).distinctBy { item -> item.id }
+                    it.copy(items = items, shelves = result.value, loading = false, fromCache = result.value.any { shelf -> shelf.id == "offline" })
                 }
                 is AppResult.Failure -> _state.update { it.copy(loading = false, error = result.error.toUiError()) }
             }
@@ -44,7 +46,12 @@ class CatalogViewModel(private val repository: CatalogRepository) : ViewModel() 
             val result = if (genre == null) repository.popular(type) else repository.discover(type, genre.id)
             when (result) {
                 is AppResult.Success -> _state.update {
-                    it.copy(items = result.value.items, loading = false, fromCache = result.value.fromCache)
+                    it.copy(
+                        items = result.value.items,
+                        shelves = listOf(CatalogShelf("genre", genre?.label ?: "Популярное", result.value.items)),
+                        loading = false,
+                        fromCache = result.value.fromCache,
+                    )
                 }
                 is AppResult.Failure -> _state.update { it.copy(loading = false, error = result.error.toUiError()) }
             }
@@ -60,7 +67,7 @@ class CatalogViewModel(private val repository: CatalogRepository) : ViewModel() 
             _state.update { it.copy(loading = true, error = null) }
             when (val result = repository.search(query)) {
                 is AppResult.Success -> _state.update {
-                    it.copy(items = result.value.items, loading = false, fromCache = false)
+                    it.copy(items = result.value.items, shelves = emptyList(), loading = false, fromCache = false)
                 }
                 is AppResult.Failure -> _state.update { it.copy(loading = false, error = result.error.toUiError()) }
             }
@@ -135,6 +142,7 @@ data class CatalogUiState(
     val episodes: List<CatalogEpisode> = emptyList(),
     val loadingEpisodes: Boolean = false,
     val selectedGenre: CatalogGenre? = null,
+    val shelves: List<CatalogShelf> = emptyList(),
 )
 
 data class CatalogGenre(val id: Int, val label: String)

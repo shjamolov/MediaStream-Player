@@ -127,9 +127,14 @@ fun CatalogScreen(
             if (searchMode) {
                 MediaRow("Результаты", state.items, viewModel::open)
             } else {
-                MediaRow("Сейчас смотрят", state.items, viewModel::open)
-                val topRated = state.items.sortedByDescending { it.voteAverage ?: 0.0 }.take(10)
-                MediaRow("Топ-10 для вас", topRated, viewModel::open, numbered = true)
+                state.shelves.forEach { shelf ->
+                    MediaRow(
+                        title = shelf.title,
+                        media = shelf.items,
+                        onClick = viewModel::open,
+                        numbered = shelf.id == "top_rated",
+                    )
+                }
             }
         }
     }

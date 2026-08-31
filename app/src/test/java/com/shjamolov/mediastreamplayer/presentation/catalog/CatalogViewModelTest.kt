@@ -8,6 +8,7 @@ import com.shjamolov.mediastreamplayer.domain.model.TmdbId
 import com.shjamolov.mediastreamplayer.domain.model.CatalogEpisode
 import com.shjamolov.mediastreamplayer.domain.repository.CatalogPage
 import com.shjamolov.mediastreamplayer.domain.repository.CatalogRepository
+import com.shjamolov.mediastreamplayer.domain.repository.CatalogShelf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -65,6 +66,7 @@ class CatalogViewModelTest {
 private class FakeCatalogRepository(private val item: CatalogItem) : CatalogRepository {
     private val favorite = MutableStateFlow(false)
     override suspend fun popular(type: MediaType) = AppResult.Success(CatalogPage(listOf(item), false))
+    override suspend fun home(type: MediaType) = AppResult.Success(listOf(CatalogShelf("trending", "Тренды", listOf(item))))
     override suspend fun discover(type: MediaType, genreId: Int) = AppResult.Success(CatalogPage(listOf(item), false))
     override suspend fun search(query: String) = AppResult.Success(CatalogPage(listOf(item), false))
     override suspend fun details(id: TmdbId, type: MediaType) = AppResult.Success(CatalogDetails(item))
