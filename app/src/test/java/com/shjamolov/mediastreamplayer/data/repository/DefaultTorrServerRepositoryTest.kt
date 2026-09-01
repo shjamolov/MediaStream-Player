@@ -3,6 +3,7 @@ package com.shjamolov.mediastreamplayer.data.repository
 import com.shjamolov.mediastreamplayer.domain.common.AppResult
 import com.shjamolov.mediastreamplayer.domain.model.TorrServerEndpoint
 import com.shjamolov.mediastreamplayer.domain.model.TorrServerMode
+import com.shjamolov.mediastreamplayer.domain.model.TorrentSearchResult
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -98,5 +99,19 @@ class DefaultTorrServerRepositoryTest {
         assertEquals("4K", result.value.first().title)
         assertEquals(50, result.value.first().seeders)
         assertEquals("magnet:?b", result.value.first().magnetOrLink)
+    }
+
+    @Test
+    fun mergeSearchResults_removesDuplicatesAndPrefersCompatibleAudioAndQuality() {
+        val results = listOf(
+            TorrentSearchResult("Movie DTS 4K", "A", "20 GB", 100, 0, 2160, "magnet:?xt=urn:btih:SAME", audioCompatibility = 1),
+            TorrentSearchResult("Movie duplicate", "B", "8 GB", 50, 0, 1080, "magnet:?xt=urn:btih:SAME", audioCompatibility = 4),
+            TorrentSearchResult("Movie AAC 1080", "C", "8 GB", 20, 0, 1080, "magnet:?xt=urn:btih:OTHER", audioCompatibility = 4),
+        )
+
+        val merged = mergeSearchResults(results)
+
+        assertEquals(2, merged.size)
+        assertEquals("Movie duplicate", merged.first().title)
     }
 }

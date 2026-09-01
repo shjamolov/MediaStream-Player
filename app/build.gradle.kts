@@ -133,6 +133,7 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer.hls)
     implementation(libs.androidx.media3.exoplayer.dash)
     implementation(libs.androidx.media3.ui)
+    implementation("org.videolan.android:libvlc-all:3.7.5")
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

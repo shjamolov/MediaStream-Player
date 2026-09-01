@@ -81,7 +81,14 @@ class MainActivity : ComponentActivity() {
                 }
 
                 when {
-                    torrentPlayback != null -> TorrentPlayerScreen(checkNotNull(torrentPlayback), torrentPlaybackViewModel::closePlayer)
+                    torrentPlayback != null -> TorrentPlayerScreen(
+                        source = checkNotNull(torrentPlayback),
+                        onChooseRelease = torrentPlaybackViewModel::closePlayer,
+                        onBack = {
+                            torrentPlaybackViewModel.closePlayer()
+                            torrentPlaybackViewModel.close()
+                        },
+                    )
                     selectedChannel != null -> TvPlayerScreen(
                         channel = checkNotNull(selectedChannel),
                         guideState = guideState,

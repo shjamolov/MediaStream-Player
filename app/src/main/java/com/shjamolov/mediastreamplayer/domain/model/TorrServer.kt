@@ -52,4 +52,6 @@ data class TorrentSearchResult(
     val peers: Int,
     val quality: Int?,
     val magnetOrLink: String,
+    val sizeBytes: Long? = null,
+    val audioCompatibility: Int = 0,
 )

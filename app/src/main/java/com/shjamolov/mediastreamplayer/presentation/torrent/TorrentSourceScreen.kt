@@ -67,7 +67,14 @@ fun TorrentSourceScreen(viewModel: TorrentPlaybackViewModel) {
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             val quality = result.quality?.let { "${it}p • " }.orEmpty()
-                            Text("${result.title}\n$quality${result.size} • ↑ ${result.seeders} • ${result.source}")
+                            val audio = when (result.audioCompatibility) {
+                                4 -> "AAC ✓"
+                                3 -> "E-AC3 ✓"
+                                2 -> "звук: авто"
+                                1 -> "DTS: устройству нужен VLC"
+                                else -> "звук: неизвестно"
+                            }
+                            Text("${result.title}\n$quality${result.size} • $audio • ↑ ${result.seeders} • ${result.source}")
                         }
                     }
                 }

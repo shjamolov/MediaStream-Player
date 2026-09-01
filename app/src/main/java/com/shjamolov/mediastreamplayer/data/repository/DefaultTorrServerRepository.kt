@@ -131,7 +131,7 @@ class DefaultTorrServerRepository(
         endpoint: TorrServerEndpoint,
         query: String,
     ): AppResult<List<TorrentSearchResult>> = withContext(Dispatchers.IO) {
-        try {
+        val torrServerResults = try {
             val url = endpoint.baseUrl.trimEnd('/').toHttpUrl().newBuilder()
                 .addPathSegment("search")
                 .addQueryParameter("query", query)
@@ -140,8 +140,7 @@ class DefaultTorrServerRepository(
                 if (endpoint.username != null) header("Authorization", Credentials.basic(endpoint.username, checkNotNull(endpoint.password)))
             }.build()
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@withContext AppResult.Failure(AppError.Configuration("TorrServer search HTTP ${response.code}"))
-                val results = json.parseToJsonElement(response.body?.string().orEmpty()).jsonArray.mapNotNull { element ->
+                if (!response.isSuccessful) emptyList() else json.parseToJsonElement(response.body?.string().orEmpty()).jsonArray.mapNotNull { element ->
                     val item = element.jsonObject
                     val source = item.string("Magnet").ifBlank { item.string("Link") }
                     if (source.isBlank()) return@mapNotNull null
@@ -153,16 +152,54 @@ class DefaultTorrServerRepository(
                         peers = item.string("Peer").toIntOrNull() ?: 0,
                         quality = normalizeVideoQuality(item.string("VideoQuality").toIntOrNull()),
                         magnetOrLink = source,
+                        sizeBytes = parseSizeBytes(item.string("Size")),
+                        audioCompatibility = audioCompatibility(item.string("Title").ifBlank { item.string("Name") }),
                     )
-                }.sortedWith(compareByDescending<TorrentSearchResult> { it.seeders }.thenByDescending { it.quality ?: 0 })
-                AppResult.Success(results)
+                }
             }
-        } catch (error: IOException) {
-            AppResult.Failure(AppError.Network(error))
-        } catch (error: Exception) {
-            AppResult.Failure(AppError.Unexpected(error))
-        }
+        } catch (_: Exception) { emptyList() }
+
+        val archiveResults = searchOpenArchive(query)
+        val merged = mergeSearchResults(torrServerResults + archiveResults)
+        if (merged.isNotEmpty()) AppResult.Success(merged)
+        else AppResult.Failure(AppError.Network(IOException("No embedded search source responded")))
     }
+
+    private fun searchOpenArchive(query: String): List<TorrentSearchResult> = try {
+        val searchExpression = "title:(\"${query.replace("\"", " ")}\") AND collection:(opensource_movies) AND mediatype:(movies)"
+        val url = "https://archive.org/advancedsearch.php".toHttpUrl().newBuilder()
+            .addQueryParameter("q", searchExpression)
+            .addQueryParameter("fl[]", "identifier")
+            .addQueryParameter("fl[]", "title")
+            .addQueryParameter("fl[]", "downloads")
+            .addQueryParameter("fl[]", "item_size")
+            .addQueryParameter("rows", "20")
+            .addQueryParameter("output", "json")
+            .build()
+        client.newCall(Request.Builder().url(url).build()).execute().use { response ->
+            if (!response.isSuccessful) return emptyList()
+            val docs = json.parseToJsonElement(response.body?.string().orEmpty()).jsonObject["response"]
+                ?.jsonObject?.get("docs")?.jsonArray.orEmpty()
+            docs.mapNotNull { element ->
+                val item = element.jsonObject
+                val identifier = item.string("identifier")
+                if (identifier.isBlank()) return@mapNotNull null
+                val title = item.string("title").ifBlank { identifier }
+                val sizeBytes = item.string("item_size").toLongOrNull()
+                TorrentSearchResult(
+                    title = title,
+                    source = "Internet Archive • Open Movies",
+                    size = sizeBytes?.let(::formatSearchSize).orEmpty(),
+                    seeders = item.string("downloads").toIntOrNull() ?: 0,
+                    peers = 0,
+                    quality = inferQuality(title),
+                    magnetOrLink = "https://archive.org/download/$identifier/${identifier}_archive.torrent",
+                    sizeBytes = sizeBytes,
+                    audioCompatibility = audioCompatibility(title),
+                )
+            }
+        }
+    } catch (_: Exception) { emptyList() }
 
     private fun post(endpoint: TorrServerEndpoint, payload: JsonObject): JsonObject {
         val body = json.encodeToString(JsonObject.serializer(), payload)
@@ -218,3 +255,49 @@ class DefaultTorrServerRepository(
 }
 
 private class HttpStatusException(val code: Int) : IOException("HTTP $code")
+
+internal fun mergeSearchResults(results: List<TorrentSearchResult>): List<TorrentSearchResult> =
+    results.sortedWith(
+        compareByDescending<TorrentSearchResult> { it.audioCompatibility }
+            .thenByDescending { it.quality ?: 0 }
+            .thenByDescending { it.seeders }
+            .thenByDescending { it.sizeBytes ?: 0L },
+    ).distinctBy { result ->
+        Regex("(?i)btih:([a-z0-9]+)").find(result.magnetOrLink)?.groupValues?.get(1)
+            ?: result.title.lowercase().replace(Regex("[^a-zа-я0-9]+"), "")
+    }
+
+private fun audioCompatibility(title: String): Int = when {
+    title.contains("AAC", true) -> 4
+    title.contains("EAC3", true) || title.contains("E-AC-3", true) -> 3
+    title.contains("AC3", true) || title.contains("AC-3", true) -> 2
+    title.contains("DTS", true) || title.contains("TRUEHD", true) -> 1
+    else -> 2
+}
+
+private fun inferQuality(title: String): Int? = when {
+    title.contains("2160", true) || title.contains("4K", true) -> 2160
+    title.contains("1080", true) -> 1080
+    title.contains("720", true) -> 720
+    title.contains("480", true) -> 480
+    else -> null
+}
+
+private fun parseSizeBytes(value: String): Long? {
+    val match = Regex("([0-9]+(?:[.,][0-9]+)?)\\s*(TB|GB|MB|KB|B)", RegexOption.IGNORE_CASE).find(value) ?: return null
+    val number = match.groupValues[1].replace(',', '.').toDoubleOrNull() ?: return null
+    val multiplier = when (match.groupValues[2].uppercase()) {
+        "TB" -> 1_099_511_627_776.0
+        "GB" -> 1_073_741_824.0
+        "MB" -> 1_048_576.0
+        "KB" -> 1_024.0
+        else -> 1.0
+    }
+    return (number * multiplier).toLong()
+}
+
+private fun formatSearchSize(bytes: Long): String = when {
+    bytes >= 1_073_741_824 -> "%.1f GB".format(bytes / 1_073_741_824.0)
+    bytes >= 1_048_576 -> "%.0f MB".format(bytes / 1_048_576.0)
+    else -> "${bytes / 1024} KB"
+}
